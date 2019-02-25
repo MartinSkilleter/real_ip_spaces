@@ -1,0 +1,8 @@
+[package]
+name = "ITP-2019"
+version = "0.1"
+lean_version = "nightly-2019-01-13"
+path = "src"
+
+[dependencies]
+mathlib = {git = "https://github.com/leanprover-community/mathlib", rev = "f9220866822b6d606ac41af14384210048d73b32"}
