@@ -6,7 +6,7 @@ inductive Natural
 open Natural
 
 instance : has_zero Natural :=
- { zero := zero}
+{ zero := zero}
 
 instance : has_one Natural :=
  { one := succ zero}
@@ -125,7 +125,20 @@ Natural.rec_on a
 )
 
 theorem times_commutativity (a b : Natural) : a * b = b * a :=
-sorry
+Natural.rec_on b
+(show a * 0 = 0 * a, from calc
+      a * 0 = 0 : rfl
+        ... = 0 * a : by rw times_zero
+)
+(assume b, assume ih : a * b = b * a,
+ show a * (b + 1) = (b + 1) * a, from calc
+      a * (b + 1) = a * b + a : rfl
+              ... = b * a + a : by rw ih
+              ... = (b + 1) * a : sorry
+)
+
+
+
 
 theorem times_associativity (a b c : Natural) : (a * b) * c = a * (b * c) :=
 sorry
