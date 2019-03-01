@@ -44,7 +44,8 @@ Natural.rec_on c
       (a + b) + (c + 1) = ((a + b) + c) + 1 : rfl
                     ... = (a + (b + c)) + 1 : by rw ih
                     ... = a + ((b + c) + 1) : rfl
-                    ... = a + (b + (c + 1)) : rfl)
+                    ... = a + (b + (c + 1)) : rfl
+)
 
 lemma zero_commutativity (a : Natural) : a + 0 = 0 + a :=
 Natural.rec_on a
@@ -58,38 +59,34 @@ Natural.rec_on a
               ... = 0 + (a + 1) : rfl
 )
 
-/- lemma one_commutativity (a : Natural) : add a (succ zero) = add (succ zero) a :=
+lemma one_commutativity (a : Natural) : a + 1 = 1 + a :=
 Natural.rec_on a
-(show add (succ zero) zero = add zero (succ zero), from zero_commutativity)
-(assume a, assume ih : add a (succ zero) = add (succ zero) a,
- show add (succ a) (succ zero) = add (succ zero) (succ a), from calc
-      add (succ a) (succ zero) = succ (add (succ a) zero) : by rw add
-                           ... = succ (succ a) : by rw add
-                           ... = succ (succ (add a zero)) : by rw add
-                           ... = succ (add a (succ zero)) : by rw add
-                           ... = succ (add (succ zero) a) : by rw ih
-                           ... = add (succ zero) (succ a) : by rw add
-
-)
--/
-
-theorem distributivity (a b c : Natural) : times a (add b c) = add (times a b) (times a c) :=
-Natural.rec_on c
-(show times a (add b zero) = add (times a b) (times a zero), from calc
-      times a (add b zero) = times a b : by rw add
-                       ... = add (times a b) zero : by rw add
-                       ... = add (times a b) (times a zero) : by rw add
-)
-(assume c, assume ih : times a (add b c) = add (times a b) (times a c),
- show 
-
+(show 0 + 1 = 1 + 0, from zero_commutativity)
+(assume a, assume ih : a + 1 = 1 + a,
+ show (a + 1) + 1 = 1 + (a + 1), from calc
+      (a + 1) + 1 = (1 + a) + 1 : by rw ih
+              ... = 1 + (a + 1) : rfl
 )
 
+theorem add_commutativity (a b : Natural) : a + b = b + a :=
+Natural.rec_on b
+(show a + 0 = 0 + a, from zero_commutativity)
+(assume b, assume ih : a + b = b + a,
+ show a + (b + 1) = (b + 1) + a, from calc
+      a + (b + 1) = (a + b) + 1 : by rw add_associativity
+              ... = (b + a) + 1 : by rw ih
+              ... = b + (a + 1) : by rw add_associativity
+              ... = b + (1 + a) : by rw one_commutativity
+              ... = (b + 1) + a : by rw add_associativity
+)
 
-theorem times_commutativity (a b : Natural) : times a b = times b a :=
+theorem distributivity (a b c : Natural) : a * (b + c) = a * b + (times a c) :=
 sorry
 
-theorem times_associativity (a b c : Natural) : times (times a b) c = times a (times b c) :=
+theorem times_commutativity (a b : Natural) : a * b = b * a :=
+sorry
+
+theorem times_associativity (a b c : Natural) : (a * b) * c = a * (b * c) :=
 sorry
 
 end hidden
