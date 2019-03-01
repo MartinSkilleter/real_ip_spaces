@@ -113,6 +113,17 @@ Natural.rec_on c
 theorem times_cancellation_law (a b c : Natural) : a * c = b * c → a = b :=
 sorry
 
+lemma times_zero (a : Natural) : 0 * a = 0 :=
+Natural.rec_on a
+(show (0 * 0 : Natural) = 0, by refl)
+(assume a, assume ih : 0 * a = 0,
+ show 0 * (a + 1) = 0, from calc
+      0 * (a + 1) = 0 * a + 0 * 1 : by rw distributivity
+              ... = 0 + 0 * 1 : by rw ih
+              ... = 0 + 0 : rfl
+              ... = 0 : rfl
+)
+
 theorem times_commutativity (a b : Natural) : a * b = b * a :=
 sorry
 
