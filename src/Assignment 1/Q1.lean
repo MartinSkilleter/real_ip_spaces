@@ -1,37 +1,37 @@
 namespace hidden
 inductive Natural
- | zero : Natural
- | succ : Natural -> Natural
+| zero : Natural
+| succ : Natural -> Natural
 
 open Natural
 
 instance : has_zero Natural :=
- { zero := zero}
+{ zero := zero }
 
 instance : has_one Natural :=
- { one := succ zero}
+{ one := succ zero}
 
 def add : Natural -> Natural -> Natural
- | a zero := a
- | a (succ b) := succ (add a b).
+| a zero := a
+| a (succ b) := succ (add a b).
 
-instance : has_add Natural := 
+instance : has_add Natural :=
 { add := add }
 
 def times : Natural -> Natural -> Natural
- | a zero := zero
- | a (succ b) := add (times a b) a
+| a zero := zero
+| a (succ b) := add (times a b) a
 
 instance : has_mul Natural :=
 { mul := times}
 
 /- The 1st argument is the base and the 2nd argument is the exponent-/
 def pow : Natural -> Natural -> Natural
- | a zero := (succ zero)
- | a (succ b) := times (pow a b) a
+| a zero := (succ zero)
+| a (succ b) := times (pow a b) a
 
 instance : has_pow Natural Natural :=
- { pow := pow}
+{ pow := pow}
 
 theorem add_associativity (a b c : Natural) : (a + b) + c = a + (b + c) :=
 Natural.rec_on c
@@ -81,7 +81,7 @@ Natural.rec_on c
                        ... = add (times a b) (times a zero) : by rw add
 )
 (assume c, assume ih : times a (add b c) = add (times a b) (times a c),
- show 
+ show
 
 )
 
