@@ -90,11 +90,28 @@ Natural.rec_on c
  show a * (b + (c + 1)) = a * b + a * (c + 1), from calc
       a * (b + (c + 1)) = a * ((b + c) + 1) : by rw add_associativity
                     ... = a * (b + c) + a : rfl
-                    ... = (a * b + a * c) + a : by rw 
-
-
-
+                    ... = (a * b + a * c) + a : by rw ih
+                    ... = a * b + (a * c + a) : by rw add_associativity
+                    ... = a * b + a * (c + 1) : rfl
 )
+
+theorem add_cancellation_law (a b c : Natural) : a + c = b + c → a = b :=
+Natural.rec_on c
+(show a + 0 = b + 0 → a = b, from λ h, 
+ begin 
+      have h1 : a + 0 = a := rfl, have h2 : b + 0 = b := rfl,
+      rw [h1, h2] at h,
+      exact h
+ end)
+ (assume c, assume ih : a + c = b + c → a = b,
+  show a + (c + 1) = b + (c + 1) → a = b, from λ h,
+  begin
+      sorry
+  end 
+ )
+
+theorem times_cancellation_law (a b c : Natural) : a * c = b * c → a = b :=
+sorry
 
 theorem times_commutativity (a b : Natural) : a * b = b * a :=
 sorry
