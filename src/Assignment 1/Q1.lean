@@ -25,7 +25,6 @@ def times : Natural -> Natural -> Natural
 instance : has_mul Natural :=
 { mul := times}
 
-/- The 1st argument is the base and the 2nd argument is the exponent-/
 def pow : Natural -> Natural -> Natural
  | a zero := (succ zero)
  | a (succ b) := times (pow a b) a
@@ -61,7 +60,7 @@ Natural.rec_on a
 
 lemma one_commutativity (a : Natural) : a + 1 = 1 + a :=
 Natural.rec_on a
-(show 0 + 1 = 1 + 0, from zero_commutativity)
+(show (0 + 1 : Natural) = 1 + 0, by rw zero_commutativity)
 (assume a, assume ih : a + 1 = 1 + a,
  show (a + 1) + 1 = 1 + (a + 1), from calc
       (a + 1) + 1 = (1 + a) + 1 : by rw ih
@@ -70,7 +69,7 @@ Natural.rec_on a
 
 theorem add_commutativity (a b : Natural) : a + b = b + a :=
 Natural.rec_on b
-(show a + 0 = 0 + a, from zero_commutativity)
+(show (a + 0 : Natural) = 0 + a, by rw zero_commutativity)
 (assume b, assume ih : a + b = b + a,
  show a + (b + 1) = (b + 1) + a, from calc
       a + (b + 1) = (a + b) + 1 : by rw add_associativity
@@ -80,8 +79,22 @@ Natural.rec_on b
               ... = (b + 1) + a : by rw add_associativity
 )
 
-theorem distributivity (a b c : Natural) : a * (b + c) = a * b + (times a c) :=
-sorry
+theorem distributivity (a b c : Natural) : a * (b + c) = a * b + a * c :=
+Natural.rec_on c
+(show a * (b + 0) = a * b + a * 0, from calc
+      a * (b + 0) = a * b : rfl
+              ... = a * b + 0 : rfl
+              ... = a * b + a * 0 : rfl
+)
+(assume c, assume ih : a * (b + c) = a * b + a * c,
+ show a * (b + (c + 1)) = a * b + a * (c + 1), from calc
+      a * (b + (c + 1)) = a * ((b + c) + 1) : by rw add_associativity
+                    ... = a * (b + c) + a : rfl
+                    ... = (a * b + a * c) + a : by rw 
+
+
+
+)
 
 theorem times_commutativity (a b : Natural) : a * b = b * a :=
 sorry
