@@ -95,24 +95,6 @@ Natural.rec_on c
                     ... = a * b + a * (c + 1) : rfl
 )
 
-theorem add_cancellation_law (a b c : Natural) : a + c = b + c → a = b :=
-Natural.rec_on c
-(show a + 0 = b + 0 → a = b, from λ h, 
- begin 
-      have h1 : a + 0 = a := rfl, have h2 : b + 0 = b := rfl,
-      rw [h1, h2] at h,
-      exact h
- end)
- (assume c, assume ih : a + c = b + c → a = b,
-  show a + (c + 1) = b + (c + 1) → a = b, from λ h,
-  begin
-      sorry
-  end 
- )
-
-theorem times_cancellation_law (a b c : Natural) : a * c = b * c → a = b :=
-sorry
-
 lemma times_zero (a : Natural) : 0 * a = 0 :=
 Natural.rec_on a
 (show (0 * 0 : Natural) = 0, by refl)
@@ -123,6 +105,11 @@ Natural.rec_on a
               ... = 0 + 0 : rfl
               ... = 0 : rfl
 )
+
+lemma times_one (a : Natural) : a * 1 = 1 * a :=
+Natural.rec_on a
+(show (0 * 1 : Natural) = 1 * 0,by refl)
+sorry
 
 theorem times_commutativity (a b : Natural) : a * b = b * a :=
 Natural.rec_on b
@@ -137,10 +124,19 @@ Natural.rec_on b
               ... = (b + 1) * a : sorry
 )
 
-
-
-
 theorem times_associativity (a b c : Natural) : (a * b) * c = a * (b * c) :=
-sorry
+Natural.rec_on c
+(show (a * b) * 0 = a * (b * 0), from calc
+      (a * b) * 0 = 0 : rfl
+              ... = a * 0 : rfl
+              ... = a * (b * 0) : rfl
+)
+(assume c, assume ih : (a * b) * c = a * (b * c),
+ show (a * b) * (c + 1) = a * (b * (c + 1)), from calc
+      (a * b) * (c + 1) = (a * b) * c + a * b : rfl
+                    ... = a * (b * c) + a * b : by rw ih
+                    ... = a * ((b * c) + b) : by rw distributivity
+                    ... = a * (b * (c + 1)) : rfl
+)
 
 end hidden
