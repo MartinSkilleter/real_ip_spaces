@@ -79,7 +79,7 @@ Natural.rec_on b
               ... = (b + 1) + a : by rw add_associativity
 )
 
-theorem distributivity (a b c : Natural) : a * (b + c) = a * b + a * c :=
+theorem left_distributivity (a b c : Natural) : a * (b + c) = a * b + a * c :=
 Natural.rec_on c
 (show a * (b + 0) = a * b + a * 0, from calc
       a * (b + 0) = a * b : rfl
@@ -100,16 +100,44 @@ Natural.rec_on a
 (show (0 * 0 : Natural) = 0, by refl)
 (assume a, assume ih : 0 * a = 0,
  show 0 * (a + 1) = 0, from calc
-      0 * (a + 1) = 0 * a + 0 * 1 : by rw distributivity
+      0 * (a + 1) = 0 * a + 0 * 1 : by rw left_distributivity
               ... = 0 + 0 * 1 : by rw ih
               ... = 0 + 0 : rfl
               ... = 0 : rfl
 )
 
-lemma times_one (a : Natural) : a * 1 = 1 * a :=
+theorem right_distributivity (a b c : Natural) : (a + b) * c = a * c + b * c :=
+Natural.rec_on c
+(show (a + b) * 0 = a * 0 + b * 0, by refl)
+(assume c, assume ih : (a + b) * c = a * c + b * c,
+ show (a + b) * (c + 1) = a * (c + 1) + b * (c + 1), from calc
+      (a + b) * (c + 1) = ((a + b) * c) + (a + b) : rfl
+                    ... = (a * c + b * c) + (a + b) : by rw ih
+                    ... = ((a * c + b * c) + a) + b : by rw ← add_associativity
+                    ... = (a * c + (b * c + a)) + b : by rw ← add_associativity
+                    ... = (a * c + (a + b * c)) + b : by rw add_commutativity (b * c)
+                    ... = ((a * c + a) + b * c) + b : by rw ← add_associativity
+                    ... = (a * c + a) + (b * c + b) : by rw ← add_associativity
+                    ... = a * (c + 1) + b * (c + 1) : by refl
+)
+
+lemma right_times_one (a : Natural) : a * 1 = a :=
+(show a * 1 = a, from calc
+      a * 1 = a * 0 + a : rfl
+        ... = 0 + a : rfl
+        ... = a + 0 : by rw add_commutativity
+        ... = a : rfl
+)
+
+lemma left_times_one (a : Natural) : 1 * a = a :=
 Natural.rec_on a
-(show (0 * 1 : Natural) = 1 * 0,by refl)
-sorry
+(show (1 * 0 : Natural) = 0, by refl)
+(assume a, assume ih : 1 * a = a, 
+ show 1 * (a + 1) = a + 1, from calc
+      1 * (a + 1) = 1 * a + 1 : rfl
+             ...  = a + 1 : by rw ih
+)
+
 
 theorem times_commutativity (a b : Natural) : a * b = b * a :=
 Natural.rec_on b
@@ -121,7 +149,10 @@ Natural.rec_on b
  show a * (b + 1) = (b + 1) * a, from calc
       a * (b + 1) = a * b + a : rfl
               ... = b * a + a : by rw ih
-              ... = (b + 1) * a : sorry
+              ... = a + b * a : by rw add_commutativity
+              ... = 1 * a + b * a : by rw left_times_one
+              ... = (1 + b) * a : by rw right_distributivity
+              ... = (b + 1) * a : by rw add_commutativity
 )
 
 theorem times_associativity (a b c : Natural) : (a * b) * c = a * (b * c) :=
@@ -135,7 +166,7 @@ Natural.rec_on c
  show (a * b) * (c + 1) = a * (b * (c + 1)), from calc
       (a * b) * (c + 1) = (a * b) * c + a * b : rfl
                     ... = a * (b * c) + a * b : by rw ih
-                    ... = a * ((b * c) + b) : by rw distributivity
+                    ... = a * ((b * c) + b) : by rw left_distributivity
                     ... = a * (b * (c + 1)) : rfl
 )
 
