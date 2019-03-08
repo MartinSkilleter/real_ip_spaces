@@ -1,6 +1,7 @@
 import data.finset
 import data.real.basic
 import data.nat.gcd
+import tactic.linarith
 
 open nat
 open finset
@@ -38,8 +39,8 @@ finset.prod (finset.Ico 1 (n+1)) keep_primes
 
 -- We use formulation 2 of the abc conjecture from https://en.wikipedia.org/wiki/Abc_conjecture
 def abc_conjecture : Prop :=
-∀ (ε > 0), ∃ (K : ℝ), ∀ (a b c : ℕ), 
-nat.gcd a b = 1 ∧ nat.gcd a c = 1 ∧ nat.gcd b c = 1 ∧ a + b = c → (c : ℝ) < K*(rad a*b*c : ℝ)^(1+ε)
+∀ (ε : ℝ), ∃ (K : ℝ), ∀ (a b c : ℕ), 
+ε > 0 ∧ nat.gcd a b = 1 ∧ nat.gcd a c = 1 ∧ nat.gcd b c = 1 ∧ a + b = c → (c : ℝ) < K*(rad a*b*c : ℝ)^(1+ε)
 
 /- We cite the paper An Elementary Problem Equivalent to the Riemann Hypothesis by Jeffrey C. Lagarias
    available at https://arxiv.org/pdf/math/0008177.pdf which states that the following is
