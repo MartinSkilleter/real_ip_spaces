@@ -79,6 +79,7 @@ Natural.rec_on b
               ... = (b + 1) + a : by rw add_associativity
 )
 
+-- Question 1a
 theorem left_distributivity (a b c : Natural) : a * (b + c) = a * b + a * c :=
 Natural.rec_on c
 (show a * (b + 0) = a * b + a * 0, from calc
@@ -138,7 +139,7 @@ Natural.rec_on a
              ...  = a + 1 : by rw ih
 )
 
-
+-- Question 1b
 theorem times_commutativity (a b : Natural) : a * b = b * a :=
 Natural.rec_on b
 (show a * 0 = 0 * a, from calc
@@ -155,6 +156,7 @@ Natural.rec_on b
               ... = (b + 1) * a : by rw add_commutativity
 )
 
+-- Question 1c
 theorem times_associativity (a b c : Natural) : (a * b) * c = a * (b * c) :=
 Natural.rec_on c
 (show (a * b) * 0 = a * (b * 0), from calc
