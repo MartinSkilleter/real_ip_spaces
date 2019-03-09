@@ -13,10 +13,13 @@ def concat {α : Type} : list (list α) -> list α
 
 def nonempty {α : Type}: list α -> bool
  | [] := false
- | L := true
+ | (_ :: _) := true
 
 theorem nonempty_concatenation {α : Type} (L : list (list α)) : 
-nonempty L ∧ ∀ (l ∈ L), nonempty l → nonempty (concat L) :=
-sorry
+(nonempty L ∧ ∀ (l ∈ L), nonempty l) → nonempty (concat L) :=
+begin
+    intros h,
+    sorry
+end
 
- end hidden
+end hidden
