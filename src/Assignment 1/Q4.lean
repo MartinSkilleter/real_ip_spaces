@@ -5,6 +5,7 @@ import tactic.squeeze
 open nat
 open finset
 
+-- We apply the add_pow theorem, which is actually the binomial expansion under a pseudonym
 theorem binomial_expansion_for_2 (n : ℕ) : 
 finset.sum (finset.range (n+1)) (λ (m : ℕ), choose n m) = 2^n :=
 begin
