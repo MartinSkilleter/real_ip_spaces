@@ -2,60 +2,52 @@ import data.list
 
 namespace hidden
 
-def len {α : Type} : list α -> ℕ
+variable {α : Type}
+
+def len {α : Type} : list α → ℕ
  | [] := 0
  | (hd :: tl) := 1 + len tl
 
-def concat {α : Type} : list (list α) -> list α
+def concat {α : Type} : list (list α) → list α
  | [] := []
- | ([] :: L) := concat L
- | ((a :: l) :: L) := a :: (concat (l :: L))
+ | (hd :: tl) := hd ++ (concat tl)
 
-def nonempty {α : Type} : list α -> bool
+def nonempty {α : Type} : list α → Prop
  | [] := false
  | (_ :: _) := true
 
-lemma nonempty_has_head {α : Type} (L : list α) : nonempty L → ∃ (hd : α), ∃ (tl : list α), hd :: tl = L :=
+lemma nonempty_tail (L M : list α) (h : nonempty M) : nonempty (L ++ M) := 
 begin
-    intros h,
-    have nonempty_def : ∃ (hd : α), ∃ (tl : list α), hd :: tl = L, begin
-        cases L,
-        { have h₂ : nonempty [] = false, by rw nonempty,
-          simp [absurd],
-          have h : false, begin
-            trivial,
-          end,
-        use h,
-        },
-        { use L_hd,
-          use L_tl,
-        },
-    end,
-    apply nonempty_def,
+    cases L,
+    {simp,
+    exact h},
+    {simp}
 end
 
-theorem nonempty_concatenation {α : Type} (L : list (list α)) : 
-(nonempty L ∧ ∀ (l ∈ L), nonempty l) → nonempty (concat L) :=
+lemma nonempty_head (L M : list α) (h : nonempty L) : nonempty (L ++ M) := 
 begin
-    intros h,
-    cases h with h_l h_r,
-    {have h₁ : ∃ (a : list α), ∃ (l : list (list α)), a :: l = L, by apply nonempty_has_head L h_l,
-     cases h₁ with hd h₂,
-     cases h₂ with tl eq,
-     have h₃ : hd ∈ L, sorry,
-     have h₄ : ↥(nonempty hd), by apply h_r hd h₃,
-     have h₅ : ∃ (a : α), ∃ (b : list α), a :: b = hd, by apply nonempty_has_head hd h₄,
-     cases h₅ with a b,
-     cases b with b eq,
+    cases M,
+    {simp,
+    exact h},
+    {have h₂ : nonempty (M_hd :: M_tl), begin
+        dsimp [nonempty],
+        trivial,
+    end,
+    apply nonempty_tail,
+    exact h₂,
+    }
+end
 
-     
-
-     sorry
-     
-    
-    
-    },
-
+theorem nonempty_concat_of_nonempty_is_nonempty 
+(L : list (list α)) (h : nonempty L) (w : ∀ (m ∈ L), nonempty m) : nonempty (concat L) :=
+begin
+  cases L,
+  {cases h},
+  {dsimp [concat],
+   apply nonempty_head,
+   apply w,
+   simp,
+  }
 end
 
 end hidden
