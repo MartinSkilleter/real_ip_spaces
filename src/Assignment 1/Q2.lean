@@ -38,9 +38,10 @@ def rad (n : ℕ) : ℕ :=
 (find_prime_factors n).prod
 
 -- We use formulation 2 of the abc conjecture from https://en.wikipedia.org/wiki/Abc_conjecture
+-- Note that because 1/n → 0 as n → ∞, this is equivalent to the ε formulation
 theorem abc_conjecture : Prop :=
 ∀ (n : ℕ), ∃ (K : ℝ), ∀ (a b c : ℕ), 
-n > 0 ∧ nat.gcd a b = 1 ∧ nat.gcd a c = 1 ∧ nat.gcd b c = 1 ∧ a + b = c → (c : ℝ) < K*(rad a*b*c : ℝ)^(1+1/n)
+n > 0 ∧ ∀ (z : ℕ), (z ∣ a ∧ z ∣ b ∧ z ∣ c → z = 1) ∧ a + b = c → (c : ℝ) < K*(rad a*b*c : ℝ)^(1+1/n)
 
 -- We cite the paper "An Elementary Problem Equivalent to the Riemann Hypothesis"
 -- by Jeffrey Lagarias, which can be found at http://www.math.lsa.umich.edu/~lagarias/doc/elementaryrh.pdf
@@ -53,4 +54,4 @@ def sum_of_divisors (n : ℕ) : ℝ :=
 
 theorem riemann_hypothesis : Prop :=
 ∀ (n : ℕ), sum_of_divisors n ≤ H_n n + exp (H_n n)*log (H_n n) ∧
-            sum_of_divisors n = H_n n + exp (H_n n)*log (H_n n) ↔ n = 1
+           sum_of_divisors n = H_n n + exp (H_n n)*log (H_n n) ↔ n = 1
