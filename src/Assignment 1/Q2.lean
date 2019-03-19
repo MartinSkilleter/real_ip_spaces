@@ -39,9 +39,24 @@ def rad (n : ℕ) : ℕ :=
 
 -- We use formulation 2 of the abc conjecture from https://en.wikipedia.org/wiki/Abc_conjecture
 -- Note that because 1/n → 0 as n → ∞, this is equivalent to the ε formulation
-theorem abc_conjecture : Prop :=
+def abc_conjecture : Prop :=
 ∀ (n : ℕ), ∃ (K : ℝ), ∀ (a b c : ℕ), 
 n > 0 ∧ ∀ (z : ℕ), (z ∣ a ∧ z ∣ b ∧ z ∣ c → z = 1) ∧ a + b = c → (c : ℝ) < K*(rad a*b*c : ℝ)^(1+1/n)
+
+section
+local attribute [instance] classical.prop_decidable
+
+theorem oops : ¬ abc_conjecture :=
+begin
+  dsimp [abc_conjecture],
+  simp only [not_forall],
+  use 0,
+  rintro ⟨K, p⟩,
+  replace p := p 0 0 0,
+  cases p,
+  cases p_left,
+end
+end
 
 -- We cite the paper "An Elementary Problem Equivalent to the Riemann Hypothesis"
 -- by Jeffrey Lagarias, which can be found at http://www.math.lsa.umich.edu/~lagarias/doc/elementaryrh.pdf
@@ -52,6 +67,34 @@ def H_n (n : ℕ) : ℝ := P_n (λm, 1/m) n
 def sum_of_divisors (n : ℕ) : ℝ :=
 ((list.range (n+1)).filter (∣ n)).sum
 
-theorem riemann_hypothesis : Prop :=
+def riemann_hypothesis : Prop :=
 ∀ (n : ℕ), sum_of_divisors n ≤ H_n n + exp (H_n n)*log (H_n n) ∧
            sum_of_divisors n = H_n n + exp (H_n n)*log (H_n n) ↔ n = 1
+
+section
+local attribute [instance] classical.prop_decidable
+
+example : ¬riemann_hypothesis :=
+begin
+  dsimp [riemann_hypothesis],
+  simp only [not_forall],
+  use 0,
+  simp,
+  dsimp [sum_of_divisors, H_n, list.range, list.range_core, P_n],
+  simp,
+end
+end
+
+-- what went wrong?
+-- Let's redefine some things to avoid the real numbers, which we can't compute with.
+def sum_of_divisors' (n : ℕ) : ℕ :=
+((list.range (n+1)).filter (∣ n)).sum
+
+def P_n' (f : ℕ → ℚ) (n : ℕ) : ℚ :=
+finset.sum (finset.Ico 1 (n+1)) f
+def H_n' (n : ℕ) : ℚ := P_n' (λm, 1/m) n
+
+#eval sum_of_divisors' 0
+#eval H_n' 0
+
+-- So the problem is that we _also_ have equality at n = 0!
