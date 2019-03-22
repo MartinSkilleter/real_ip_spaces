@@ -19,7 +19,7 @@ end
 theorem ext : ∀ {p q : ℍ}, p.re = q.re → p.i = q.i → p.j = q.j → p.k = q.k → p = q
 | ⟨pre, pi, pj, pk⟩ ⟨_, _, _, _⟩ rfl rfl rfl rfl := rfl
  
-theorem ext_iff : ∀ {p q : ℍ}, p = q ↔ p.re = q.re ∧ p.i = q.i ∧ p.j = q.j ∧ p.k = q.k :=
+@[simp] theorem ext_iff : ∀ {p q : ℍ}, p = q ↔ p.re = q.re ∧ p.i = q.i ∧ p.j = q.j ∧ p.k = q.k :=
 begin
     intros p q,
     split,
@@ -175,6 +175,7 @@ theorem conj_prod_re : ∀ (p : ℍ), ∃ (r : ℝ), (r : ℍ) = (conj p) * p :=
 begin
     intros p,
     use p.re^2+p.i^2+p.j^2+p.k^2,
+
 
     
     sorry
