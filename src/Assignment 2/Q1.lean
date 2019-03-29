@@ -1,5 +1,4 @@
 import data.nat.basic
-import tactic.interactive
 
 def prime (p : ℕ) := p ≥ 2 ∧ ∀ (m < p), m ∣ p → m = 1
 
@@ -12,8 +11,6 @@ begin
     use 2,
     refl,
 end
-
-example {n : ℕ} : n = n := by library_search
 
 theorem four_is_not_prime : ¬ (prime 4) :=
 begin
@@ -88,15 +85,20 @@ begin
     apply nat.decidable_le b a,
 end
 
+instance decidable_divisors {p : ℕ} : decidable (∀ (m : ℕ), m < p → m ∣ p → m = 1) :=
+begin
+    apply nat.decidable_ball_lt p (λ (m : ℕ) (a : m < p), m ∣ p → m = 1),    
+end
+
+set_option pp.implicit true
 instance decidable_prime : decidable_pred prime :=
 begin
     intros p,
     unfold prime,
-    -- refine (eq.mpr _ and.decidable),
-    apply_instance,
+    haveI h₁ : decidable (p ≥ 2) := decidable_ge,
+    haveI h₂ : decidable (∀ (m : ℕ), m < p → m ∣ p → m = 1) := decidable_divisors,
+    apply and.decidable,
 end
-
-#print decidable_prime
 
 def prime' (p : ℕ) := p ≥ 2 ∧ ∀ (m ≤ p/2), m ∣ p → m = 1
 
@@ -130,10 +132,21 @@ begin
     exact h₄.symm,
 end
 
-theorem prime_equiv_statement {p : ℕ} : prime p ↔ prime' p :=
+lemma dvd_pos_lt {a b c : ℕ} : c ≤ b → 0 < c → a / b ≤ a / c :=
 begin
-    split,
-    -- Forwards implication
+    intros h₁ h₂,
+    apply (le_div_iff_mul_le (a/b) a h₂).2,
+    have h₃ : a * c ≤ a * b := mul_le_mul_left a h₁,
+    apply le_trans,
+    swap,
+    apply div_mul_le_self',
+    exact b,
+    apply nat.mul_le_mul_left (a/b),
+    exact h₁,
+end
+
+theorem prime_im_prime' {p : ℕ} : prime p → prime' p :=
+begin
     intro h,
     unfold prime at h,
     unfold prime',
@@ -146,7 +159,10 @@ begin
     have w₄ : m < p, by apply lt_half_lt w₃ w₁,
     have w₅ : m = 1, by apply h₁ m w₄ w₂,
     exact w₅,
-    -- Converse implication
+end
+
+theorem prime'_im_prime {p : ℕ} : prime' p → prime p :=
+begin
     intros w,
     unfold prime' at w,
     unfold prime,
@@ -157,28 +173,50 @@ begin
     by_cases (m ≤ p/2),
     exact w.2 m h w₂,
     simp at h,
-    have h₁ : p / m ≤ p / 2, sorry,
-    have h₂ : p / m ∣ p, sorry,
+    have two_gt_zero : 2 > 0, by exact dec_trivial,
+    have one_lt_half : p / 2 ≥ 1, begin
+        have le : 2 ≤ p := ge,
+        have z : 2/2 ≤ p / 2 := nat.div_le_div_right le,
+        have h₁ : 2 / 2 = 1 := nat.div_self two_gt_zero,
+        rw [h₁] at z,
+        exact z,
+    end,
+    have h₄ : m > 0, begin
+        have zero_lt_one : 0 < 1, by exact dec_trivial,
+        have h₂ : 0 < p / 2, by apply lt_of_lt_of_le zero_lt_one one_lt_half,
+        exact (lt_trans h₂ h),
+    end,
+    have m_gt_one : m > 1, by apply lt_of_le_of_lt one_lt_half h,
+    have m_ge_two : m ≥ 2, by apply succ_le_of_lt m_gt_one,
+    have h₁ : p / m ≤ p / 2 := dvd_pos_lt m_ge_two two_gt_zero,
+    have h₂ : p / m ∣ p, by apply div_dvd_of_dvd w₂,
     have h₃ : p / m = 1, by apply w.2 (p/m) h₁ h₂,
-    have h₄ : m > 0, sorry,
     have h₅ : p = m * 1 := div_gt_zero_eq w₂ h₄ h₃,
     simp at h₅,
     subst h₅,
     have h₆ : p ≥ p, by exact le_refl p,
-    exfalso w₁ h₆,
-
-
-    sorry,
-    
-
-    
-
-
+    have h₇ : ¬ (p < p), by simp,
+    exact (absurd w₁ h₇),
 end
+
+theorem prime_equiv_statement {p : ℕ} : prime p ↔ prime' p :=
+⟨prime_im_prime', prime'_im_prime⟩
+
+instance decidable_divisors' {p : ℕ}: decidable (∀ (m : ℕ), m < p / 2 → m ∣ p → m = 1) :=
+nat.decidable_ball_lt (p / 2) (λ (m : ℕ) (a : m < p / 2), m ∣ p → m = 1)
 
 instance decidable_prime' : decidable_pred prime' :=
 begin
     intros p,
-    sorry,
+    unfold prime',
+    haveI h₁ : decidable (p ≥ 2) := decidable_ge,
+    haveI h₂ : decidable (∀ (m : ℕ), m < p / 2 → m ∣ p → m = 1) := decidable_divisors',
+    apply and.decidable,
+end
+
+instance decidable_prime_v2 : decidable_pred prime :=
+begin
+    intros p,
+    apply decidable_of_iff' _ (@prime_equiv_statement p),
 end
 
