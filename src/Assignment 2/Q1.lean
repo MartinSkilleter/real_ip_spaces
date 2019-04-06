@@ -235,7 +235,7 @@ theorem prime_equiv_statement {p : ℕ} : prime p ↔ prime' p :=
 instance decidable_divisors' {p : ℕ}: decidable (∀ (m : ℕ), m < p / 2 → m ∣ p → m = 1) :=
 nat.decidable_ball_lt (p / 2) (λ (m : ℕ) (a : m < p / 2), m ∣ p → m = 1)
 
--- Says that it is possible to decidable if a natural number is prime under prime'
+-- Says that it is possible to decide if a natural number is prime under prime'
 instance decidable_prime' : decidable_pred prime' :=
 begin
     intros p,
@@ -246,8 +246,7 @@ begin
 end
 
 -- Gives a "better" instance for decidable_prime by applying the equivalence of
--- prime and prime'. It is better because you only need to check half as many natural numbers
--- for large cases.
+-- prime and prime'. It is better because you only need to check half as many natural numbers.
 instance decidable_prime_v2 : decidable_pred prime :=
 begin
     intros p,
