@@ -35,6 +35,9 @@ end
 lemma le_of_eq_of_le {a b c : ℝ} : b = c → a ≤ b → a ≤ c :=
 by {intros h w, rw [h] at w, exact w}
 
+-- It turned out to be absolutely impossible to prove this without Cauchy-Schwartz.
+-- I would have proven that the norm was induced by an inner product first,
+-- but inner products are not implemented in MathLib anywhere that I could find.
 lemma norm_triangle (z w : ℍ) : ∥z+w∥ ≤ ∥z∥+∥w∥ :=
 begin
     dsimp [norm],
@@ -88,6 +91,7 @@ begin
     ring,
 end
 
+-- Question 2f
 instance : normed_space ℝ ℍ :=
 {norm_smul := norm_smul, .. (by apply_instance : vector_space ℝ ℍ)}
 
