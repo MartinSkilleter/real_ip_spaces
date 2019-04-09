@@ -3,6 +3,7 @@ import algebra.pi_instances
 import algebra.module
 import ring_theory.algebra
 
+-- Question 2a
 structure quaternion : Type :=
 (re : ℝ) (i : ℝ) (j : ℝ) (k : ℝ)
 
@@ -126,6 +127,7 @@ def real_prod_equiv : ℍ ≃ (ℝ × ℝ × ℝ × ℝ) :=
 
 @[simp] theorem real_prod_equiv_apply (z : ℍ) : real_prod_equiv z = (z.re, z.i, z.j, z.k) := rfl
 
+-- Question 2d
 def conj (z : ℍ) : ℍ := ⟨z.re, -z.i, -z.j, -z.k⟩
 
 @[simp] lemma conj_re (z : ℍ) : (conj z).re = z.re := rfl
@@ -181,8 +183,6 @@ begin
     refl,
     repeat {simp, try {rw hi}, try {rw hj}, try {rw hk}, simp},
 end
-
-
 
 def norm_sq (z : ℍ) : ℝ := z.re * z.re + z.i * z.i + z.j * z.j + z.k * z.k
 
@@ -260,9 +260,12 @@ lemma norm_sq_add (z w : ℍ) : norm_sq (z + w) =
   norm_sq z + norm_sq w + 2 * (z * conj w).re :=
 by dsimp [norm_sq]; ring
 
+-- Question 2e
 theorem mul_conj (z : ℍ) : z * conj z = norm_sq z :=
 ext_iff.2 $ by simp [norm_sq, mul_comm]
 
+-- Question 2e
+-- I did both because, in general, quaternion multiplication does not commute
 theorem mul_conj' (z : ℍ) : conj z * z = norm_sq z :=
 ext_iff.2 $ by simp [norm_sq, mul_comm]
 
@@ -309,6 +312,8 @@ by {ext; {simp, ring}}
 lemma right_distrib (a b c : ℍ) : (a + b) * c = a * c + b * c :=
 by {ext; {simp, ring}}
 
+-- Question 2b
+-- Previous lemmas were written explicitly to make ring instance compile faster
 instance : ring ℍ :=
 {mul := (*), mul_assoc := mul_assoc, one := 1, one_mul := one_mul, 
     mul_one := mul_one, left_distrib := left_distrib, right_distrib := right_distrib, .. (by apply_instance : add_comm_group ℍ)}
@@ -406,9 +411,11 @@ begin
     simp,
 end
 
+-- Question 2c
 instance : algebra ℝ ℍ :=
 {to_fun := of_real, commutes' := by simp, smul_def' := smul_def', hom := of_real.is_ring_hom}
 
+-- Question 2g
 noncomputable instance : division_ring ℍ :=
 {inv := has_inv.inv, zero_ne_one := one_ne_zero.symm, mul_inv_cancel := mul_inv_cancel, 
     inv_mul_cancel := inv_mul_cancel, .. (by apply_instance : ring ℍ)}

@@ -1,5 +1,6 @@
 import data.nat.basic
 
+-- First definition of prime (quite "prim(e)itive")
 def prime (p : ℕ) := p ≥ 2 ∧ ∀ (m < p), m ∣ p → m = 1
 
 open nat
