@@ -14,3 +14,4 @@ meta def my_tactic_5 : tactic unit :=
 do `[induction a],
     tactic.reflexivity,
     `[simpa]
+
