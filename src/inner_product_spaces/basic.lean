@@ -3,7 +3,7 @@ import data.complex.basic
 
 noncomputable theory
 
-variables {α : Type*}
+variables {α : Type*} {β : Type*}
 
 open complex
 
@@ -98,9 +98,30 @@ end
 def norm_sq' (x y : α) : ℝ :=
 begin
     have h := pos_def (x-y),
+    induction h,
     sorry,
 end
 
 instance ip_space_has_norm : has_norm α := sorry
+
+variables [decidable_eq β] [add_comm_group β] [vector_space ℂ β] [inner_product_space β]
+
+instance prod_vector_space : vector_space ℂ (α×β) := by apply_instance
+
+def prod_inner_product (x y : α×β) : ℂ := x.1†y.1 + x.2†y.2
+
+instance prod_has_inner_product : has_inner_product (α×β) := ⟨prod_inner_product⟩
+
+lemma prod_conj_symm : ∀ (x y : α×β), x†y = conj (y†x) :=
+begin
+    intros x y,
+    dsimp [(†), prod_inner_product],
+    rw [conj_add],
+end
+
+instance prod_inner_product_space : inner_product_space (α×β) :=
+begin
+    refine {conj_symm := sorry, linearity := sorry, pos_def := sorry}
+end
 
 end inner_product_space
