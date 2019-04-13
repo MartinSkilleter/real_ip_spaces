@@ -7,6 +7,8 @@ variables {α : Type*} {β : Type*}
 
 open complex
 
+instance complex_preorder : preorder complex := sorry
+
 class has_inner_product (α : Type*) := (inner_product : α → α → ℂ)
 
 export has_inner_product (inner_product)
@@ -25,13 +27,35 @@ infix `†` := inner_product
 lemma conj_symm (x y : α) : x † y = conj (y † x) :=
 by apply inner_product_space.conj_symm
 
-lemma linearity (x y z : α) (a : ℂ) : (a • x + y) † z = a * (x † z) + y † z :=
+@[simp] lemma linearity (x y z : α) (a : ℂ) : (a • x + y) † z = a * (x † z) + y † z :=
 by apply inner_product_space.linearity
 
-lemma pos_def (x : α) : ∃ (r : ℝ), (r : ℂ) = x † x ∧ (x ≠ 0 → r > 0) :=
+@[simp] lemma pos_def (x : α) : ∃ (r : ℝ), (r : ℂ) = x † x ∧ (x ≠ 0 → r > 0) :=
 by apply inner_product_space.pos_def
 
-lemma right_orthog_to_zero (x : α) : 0 † x = 0 :=
+def ip_self (x : α) : ℝ :=
+begin
+    have h := pos_def x,
+    have r := classical.some h,
+    use r,
+end
+
+lemma ip_self_is_ip (x : α) : ((ip_self x) : ℂ) = x†x :=
+begin
+    dsimp [ip_self],
+    dsimp [classical.some],
+    sorry,
+end
+
+lemma uniq_re (x : α) (r s : ℝ) : (r : ℂ) = x † x ∧ (s : ℂ) = x † x → r = s :=
+begin
+    intros h,
+    cases h,
+    rw [←h_left] at h_right,
+    rw [of_real_inj.mp h_right],
+end
+
+@[simp] lemma right_orthog_to_zero (x : α) : 0 † x = 0 :=
 begin
     have h := linearity 0 0 x 1,
     simp only [add_zero, one_mul, smul_zero] at h,
@@ -40,7 +64,7 @@ begin
     exact (w h).symm,
 end
 
-lemma left_orthog_to_zero (x : α) : x † 0 = 0 :=
+@[simp] lemma left_orthog_to_zero (x : α) : x † 0 = 0 :=
 begin
     have h := right_orthog_to_zero x,
     rw conj_symm at h,
@@ -76,7 +100,7 @@ begin
     exact h, 
 end
 
-lemma mul_in_snd_coord (x y : α) (a : ℂ) : x † (a • y) = (conj a) * (x†y) :=
+@[simp] lemma mul_in_snd_coord (x y : α) (a : ℂ) : x † (a • y) = (conj a) * (x†y) :=
 begin
     rw [conj_symm],
     apply conj_inj.1,
@@ -87,41 +111,12 @@ begin
     exact h,
 end
 
-lemma add_in_snd_coord (x y z : α) : x†(y+z) = (x†y)+(x†z) :=
+@[simp] lemma add_in_snd_coord (x y z : α) : x†(y+z) = (x†y)+(x†z) :=
 begin
     have h := linearity y z x 1,
     simp only [one_smul, one_mul] at h,
     rw [←conj_inj, conj_add, ←conj_symm, ←conj_symm x y, ←conj_symm] at h,
     exact h,
-end
-
-def norm_sq' (x y : α) : ℝ :=
-begin
-    have h := pos_def (x-y),
-    induction h,
-    sorry,
-end
-
-instance ip_space_has_norm : has_norm α := sorry
-
-variables [decidable_eq β] [add_comm_group β] [vector_space ℂ β] [inner_product_space β]
-
-instance prod_vector_space : vector_space ℂ (α×β) := by apply_instance
-
-def prod_inner_product (x y : α×β) : ℂ := x.1†y.1 + x.2†y.2
-
-instance prod_has_inner_product : has_inner_product (α×β) := ⟨prod_inner_product⟩
-
-lemma prod_conj_symm : ∀ (x y : α×β), x†y = conj (y†x) :=
-begin
-    intros x y,
-    dsimp [(†), prod_inner_product],
-    rw [conj_add],
-end
-
-instance prod_inner_product_space : inner_product_space (α×β) :=
-begin
-    refine {conj_symm := sorry, linearity := sorry, pos_def := sorry}
 end
 
 end inner_product_space
