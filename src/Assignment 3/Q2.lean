@@ -71,6 +71,8 @@ begin
     have h₂ := list.head_eq_of_cons_eq h₁_left,
     have h₃ := congr_arg f h₂,
     dsimp [eval] at v₂,
+    
+    
     sorry,
 
     cases h₁,
