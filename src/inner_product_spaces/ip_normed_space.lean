@@ -39,9 +39,9 @@ begin
     rw [real.sqrt_inj (ip_self_nonneg (x+-y)) (ip_self_nonneg (y+-x))],
     dsimp [ip_self],
     have w := linearity (x+-y) 0 (x+-y) (-1),
-    simp [-add_in_snd_coord] at w,
+    simp [-add_in_snd_coord, -additivity] at w,
     have k := mul_in_snd_coord (y+-x) (y+-x) (-1),
-    simp [-add_in_snd_coord] at k,
+    simp [-add_in_snd_coord, -additivity] at k,
     rw [w] at k,
     have k' := (@neg_inj ℂ _ _ _) k,
     rw [ext_iff] at k',
@@ -51,11 +51,35 @@ end
 
 instance ip_space_has_norm : has_norm α := ⟨λ x, real.sqrt ((ip_self x).re)⟩
 
-theorem pythagoras (x y : α) : x†y=0 → ∥x+y∥^2 = ∥x∥^2+∥y∥^2 :=
+def orthog (x y : α) := x†y = 0
+
+@[simp] lemma conj_zero_of_orthog (x y : α) : orthog x y → y†x=0 :=
 begin
     intros h,
-    sorry,
+    dsimp [orthog] at h,
+    have w := (conj_symm x y).symm,
+    rw [h, conj_eq_zero] at w,
+    exact w,
 end
+
+lemma pythagoras (x y : α) : orthog x y → ∥x+y∥^2 = ∥x∥^2+∥y∥^2 :=
+begin
+    intros h,
+    dsimp [orthog] at h,
+    dsimp [norm],
+    rw [real.sqr_sqrt (ip_self_nonneg (x+y)), real.sqr_sqrt (ip_self_nonneg x), real.sqr_sqrt (ip_self_nonneg y)],
+    rw [←add_re],
+    have k : (ip_self (x + y)) = (ip_self x + ip_self y),
+    
+    dsimp [ip_self],
+    simp,
+    rw [h, conj_zero_of_orthog x y h],
+    simp,
+
+    apply (ext_iff.1 k).left,
+end
+
+example (r s : ℝ) : r = 0 → s = 0 → r + s = 0 := by library_search
 
 lemma ip_dist_triangle : ∀ (x y z : α), dist x z ≤ dist x y + dist y z :=
 begin
