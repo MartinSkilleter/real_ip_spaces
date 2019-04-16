@@ -7,7 +7,9 @@ variables [decidable_eq α] [add_comm_group α] [vector_space ℂ α] [inner_pro
 
 open complex
 
-instance ip_space_has_dist : has_dist α := ⟨λ x y, real.sqrt ((ip_self (x-y)).re)⟩
+local notation `sqrt` := real.sqrt
+
+instance ip_space_has_dist : has_dist α := ⟨λ x y, sqrt ((ip_self (x-y)).re)⟩
 
 lemma ip_dist_self : ∀ x : α, dist x x = 0 :=
 begin
@@ -47,7 +49,7 @@ begin
     exact k'_left,
 end
 
-instance ip_space_has_norm : has_norm α := ⟨λ x, real.sqrt ((ip_self x).re)⟩
+instance ip_space_has_norm : has_norm α := ⟨λ x, sqrt ((ip_self x).re)⟩
 
 def orthog (x y : α) := x†y = 0
 
@@ -58,6 +60,16 @@ begin
     have w := (conj_symm x y).symm,
     rw [h, conj_eq_zero] at w,
     exact w,
+end
+
+@[simp] lemma mul_orthog (x y : α) (a b : ℂ) : orthog x y → orthog (a•x) (b•y) :=
+begin
+    intros h,
+    dsimp [orthog],
+    dsimp [orthog] at h,
+    simp,
+    repeat {right},
+    exact h,
 end
 
 lemma pythagoras {x y : α} : orthog x y → ∥x+y∥^2 = ∥x∥^2+∥y∥^2 :=
@@ -75,12 +87,6 @@ begin
     simp,
 
     apply (ext_iff.1 k).left,
-end
-
-lemma useful_suff_cond (z : ℂ) : z = 0 → z.re = 0 :=
-begin
-    intros h,
-    exact ((@ext_iff z 0).1 h).left,
 end
 
 def orthogonaliser (x y : α) : α := x-((x†y)/(∥y∥^2))•y
@@ -121,10 +127,6 @@ begin
     dsimp [ip_self],
     simp,
 
-    dsimp [complex.abs],
-    have w : (ip_self x).re * (ip_self y).re ≥ 0, by exact zero_le_mul (ip_self_nonneg x) (ip_self_nonneg y),
-    rw [←real.sqrt_mul (ip_self_nonneg x), real.sqrt_le (norm_sq_nonneg (x†y)) w],
-    have k := pythagoras (orthogonaliser_orthog x y h),
     sorry,
 end
 
@@ -146,7 +148,24 @@ end
 instance ip_space_is_normed_group : normed_group α :=
 {dist_eq := ip_dist_eq}
 
--- lemma ip_norm_smul : ∀ (a : ℂ) (x : α), norm (a • x) = has_norm.norm a * norm x
+instance : has_norm ℂ := ⟨λ z, abs z⟩
+
+lemma ip_norm_smul : ∀ (a : ℂ) (x : α), ∥a • x∥ = ∥a∥*∥x∥:=
+begin
+    intros a x,
+    dsimp [norm],
+    have h₁ := real.sqrt_sqr (abs_nonneg a),
+    have h₂ := pow_two_nonneg (abs a),
+    rw [←h₁, ←real.sqrt_mul h₂],
+    have h₃ := mul_nonneg h₂ (ip_self_nonneg x),
+    rw [real.sqrt_inj (ip_self_nonneg (a•x)) h₃],
+    dsimp [ip_self],
+    simp only [mul_in_fst_coord, mul_in_snd_coord],
+    rw [←norm_sq_eq_abs, ←mul_assoc, mul_comm (conj a) a, mul_conj],
+    simp,
+end
 
 instance ip_space_is_normed_space : normed_space ℂ α :=
-{norm_smul := sorry}
+{norm_smul := ip_norm_smul}
+
+def parallelogram_law [normed_space ℂ α] := ∀ (x y : α), ∥x+y∥^2+∥x-y∥^2=2*∥x∥^2+2*∥y∥^2

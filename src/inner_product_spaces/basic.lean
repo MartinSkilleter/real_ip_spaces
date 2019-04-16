@@ -14,7 +14,7 @@ export has_inner_product (inner_product)
 class inner_product_space (α : Type*) [add_comm_group α] [vector_space ℂ α] extends has_inner_product α :=
 (conj_symm : ∀ (x y : α), inner_product x y = conj (inner_product y x))
 (linearity : ∀ (x y z : α), ∀ (a : ℂ), inner_product (a • x + y) z = a * inner_product x z + inner_product y z)
-(pos_def : ∀ (x : α), x≠ 0 → (inner_product x x).re > 0)
+(pos_def : ∀ (x : α), x ≠ 0 → (inner_product x x).re > 0)
 
 section inner_product_space
 variables [decidable_eq α] [add_comm_group α] [vector_space ℂ α] [inner_product_space α]
