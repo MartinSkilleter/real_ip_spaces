@@ -51,14 +51,34 @@ end
 
 instance ip_space_has_norm : has_norm α := ⟨λ x, sqrt ((ip_self x).re)⟩
 
+@[simp] lemma sqr_norm (x : α) : ∥x∥^2 = (ip_self x).re :=
+begin
+    dsimp [norm],
+    rw [real.sqr_sqrt (ip_self_nonneg x)],
+end
+
+lemma ip_norm_nonneg (x : α) : ∥x∥ ≥ 0 :=
+begin
+    dsimp [norm],
+    exact real.sqrt_nonneg (ip_self x).re,
+end
+
 def orthog (x y : α) := x†y = 0
 
-@[simp] lemma conj_zero_of_orthog (x y : α) : orthog x y → y†x=0 :=
+lemma orthog_symm (x y : α) : orthog x y → orthog y x :=
 begin
     intros h,
     dsimp [orthog] at h,
     have w := (conj_symm x y).symm,
     rw [h, conj_eq_zero] at w,
+    exact w,
+end
+
+lemma orthog_symm' (x y : α) : orthog x y → y†x = 0 :=
+begin
+    intros h,
+    have w := orthog_symm x y h,
+    dsimp [orthog] at w,
     exact w,
 end
 
@@ -76,74 +96,107 @@ lemma pythagoras {x y : α} : orthog x y → ∥x+y∥^2 = ∥x∥^2+∥y∥^2 :
 begin
     intros h,
     dsimp [orthog] at h,
-    dsimp [norm],
-    rw [real.sqr_sqrt (ip_self_nonneg (x+y)), real.sqr_sqrt (ip_self_nonneg x), real.sqr_sqrt (ip_self_nonneg y)],
+    simp only [sqr_norm],
     rw [←add_re],
     have k : (ip_self (x + y)) = (ip_self x + ip_self y),
     
     dsimp [ip_self],
     simp,
-    rw [h, conj_zero_of_orthog x y h],
+    rw [h, orthog_symm' x y h],
     simp,
 
     apply (ext_iff.1 k).left,
 end
+.
 
-def orthogonaliser (x y : α) : α := x-((x†y)/(∥y∥^2))•y
-
-lemma orthogonaliser_orthog (x y : α) (h : y ≠ 0): orthog (orthogonaliser x y) y :=
+-- Note that although the cases hypothesis is not used, division by ∥y∥^2 is only defined if y≠0
+@[simp] theorem cauchy_schwarz (x y : α) : ∥x†y∥≤∥x∥*∥y∥ :=
 begin
-    dsimp [orthog, orthogonaliser],
-    simp only [-of_real_pow, add_in_fst_coord],
-    have w : -(((x†y)/(∥y∥^2))•y)†y=-((x†y)/(∥y∥^2))*(y†y), by sorry,
-    rw [w],
-    clear w,
-    have w : ∥y∥^2 = (ip_self y).re, begin
-        dsimp [norm],
-        rw [real.sqr_sqrt (ip_self_nonneg y)],
-    end,
-    have k : ↑(∥y∥^2) = ip_self y, begin
-        have w₁ : ↑(∥y∥^2) = ↑((ip_self y).re), begin
-            simp [-of_real_pow, ext_iff],
-            exact w,
-        end,
-        rw [ip_self_comm_eq] at w₁,
-        exact w₁,
-    end,
-    have k' := congr_arg (λ (r : ℂ), 1 / r) k,
-    simp at k',
-    have k'' : x†y / ↑∥y∥ ^ 2 = (x†y) * (↑∥y∥^2)⁻¹, by sorry,
-    rw [k''],
-    dsimp [norm],
-    sorry,
-end
-
-theorem cauchy_schwarz (x y : α) : ∥x†y∥≤∥x∥*∥y∥ :=
-begin
-    dsimp [norm],
-    by_cases (y=0),
+    by_cases (y = 0),
 
     rw [h],
-    dsimp [ip_self],
+    dsimp [norm],
     simp,
-
+    
+    have w : ∀ (t : ℂ), (ip_self (x+t•y)).re ≥ 0, by {intros t, exact (ip_self_nonneg _)},
+    dsimp [ip_self] at w,
+    have k := w (-(x†y)/(y†y)),
+    clear w,
+    simp at k,
     sorry,
 end
 
-lemma ip_dist_triangle : ∀ (x y z : α), dist x z ≤ dist x y + dist y z :=
+lemma sqr_nonneg (r : ℝ) : r^2 ≥ 0 :=
 begin
-    sorry,
+    rw [pow_two],
+    exact (mul_self_nonneg r),
 end
 
-instance ip_space_is_metric_space : metric_space α :=
-{dist_self := ip_dist_self, eq_of_dist_eq_zero := ip_eq_of_dist_eq_zero, 
-dist_comm := ip_dist_comm, dist_triangle := ip_dist_triangle}
+lemma le_of_sqrt_sqr (r : ℝ) : r ≤ sqrt (r^2) :=
+begin
+    rw [le_iff_lt_or_eq],
+    by_cases (r ≥ 0),
+
+    right,
+    exact (real.sqrt_sqr h).symm,
+
+    left,
+    simp at h,
+    have w := real.sqrt_nonneg (r^2),
+    exact lt_of_lt_of_le h w,
+end
+
+lemma re_le_norm (x y : α) : (x†y).re ≤ ∥x†y∥ :=
+begin
+    dsimp [norm, complex.abs, norm_sq],
+    have w := le_of_sqrt_sqr (x†y).re,
+    apply (le_trans w),
+    rw [real.sqrt_le (sqr_nonneg (x†y).re) (add_nonneg (mul_self_nonneg _) (mul_self_nonneg _)),
+    pow_two],
+    simp only [add_comm, le_add_iff_nonneg_left],
+    exact (mul_self_nonneg _),
+end
+
+theorem triangle_ineq (x y : α) : ∥x+y∥≤∥x∥+∥y∥ :=
+begin
+    have w : ∥x+y∥^2≤(∥x∥+∥y∥)^2 → ∥x+y∥≤∥x∥+∥y∥ := begin
+        intros h,
+        rw [←real.sqrt_le (sqr_nonneg (∥x+y∥)) (sqr_nonneg (∥x∥+∥y∥)), 
+        real.sqrt_sqr (ip_norm_nonneg (x+y)), 
+        real.sqrt_sqr (add_nonneg (ip_norm_nonneg x) (ip_norm_nonneg y))] at h,
+        exact h,
+    end,
+    apply w,
+    ring SOP,
+    rw [←pow_two],
+    repeat {rw [sqr_norm]},
+    rw [ip_self_add x y, add_assoc, add_assoc, add_le_add_iff_left (ip_self x).re,
+    add_le_add_iff_right, mul_assoc, mul_comm ∥y∥ 2, ←mul_assoc,
+    mul_comm ∥x∥ 2, mul_assoc,
+    @mul_le_mul_left _ _ (x†y).re _ 2 (by linarith)],
+    have k := re_le_norm x y,
+    have k' := cauchy_schwarz x y,
+    exact le_trans k k',
+end
 
 lemma ip_dist_eq : ∀ (x y : α), dist x y = norm (x - y) :=
 begin
     intros x y,
     refl,
 end
+
+lemma ip_dist_triangle : ∀ (x y z : α), dist x z ≤ dist x y + dist y z :=
+begin
+    intros x y z,
+    repeat {rw [ip_dist_eq]},
+    have w : x - z = (x-y) + (y-z) := by simp,
+    rw [w],
+    exact triangle_ineq (x-y) (y-z),
+end
+
+instance ip_space_is_metric_space : metric_space α :=
+{dist_self := ip_dist_self, eq_of_dist_eq_zero := ip_eq_of_dist_eq_zero, 
+dist_comm := ip_dist_comm, dist_triangle := ip_dist_triangle}
 
 instance ip_space_is_normed_group : normed_group α :=
 {dist_eq := ip_dist_eq}
@@ -168,4 +221,8 @@ end
 instance ip_space_is_normed_space : normed_space ℂ α :=
 {norm_smul := ip_norm_smul}
 
-def parallelogram_law [normed_space ℂ α] := ∀ (x y : α), ∥x+y∥^2+∥x-y∥^2=2*∥x∥^2+2*∥y∥^2
+class parallelopotamus (α : Type*) [add_comm_group α] [vector_space ℂ α] extends normed_space ℂ α :=
+(parallelogram_law : ∀ (x y : α), ∥x+y∥^2+∥x-y∥^2=2*∥x∥^2+2*∥y∥^2)
+
+
+

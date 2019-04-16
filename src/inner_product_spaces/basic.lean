@@ -64,6 +64,12 @@ end
 
 def ip_self : α → ℂ := λ x, x†x
 
+@[simp] lemma ip_self_zero : ip_self (0 : α) = 0 :=
+begin
+    dsimp [ip_self],
+    exact (right_orthog_to_zero 0),
+end
+
 lemma zero_of_self_ip_zero (x : α) : ip_self x = 0 → x = 0 :=
 begin
     intros h,
@@ -79,11 +85,12 @@ end
 lemma zero_iff_ip_self_zero (x : α) : ip_self x=0 ↔ x=0 :=
 begin
     split,
+
     exact zero_of_self_ip_zero x,
-    have h := left_orthog_to_zero x,
-    intros w,
-    rw [←w] at h,
-    exact h,
+
+    intros h,
+    rw [h],
+    exact ip_self_zero,
 end
 
 @[simp] lemma ip_self_im_zero (x : α) : (ip_self x).im = 0 :=
@@ -97,6 +104,14 @@ begin
     cases h',
     simp only [of_real_im] at h'_right,
     exact h'_right,
+end
+
+@[simp] lemma ip_self_eq_conj (x : α) : conj (x†x) = x†x :=
+begin
+    simp [ext_iff],
+    have w := ip_self_im_zero x,
+    dsimp [ip_self] at w,
+    rw [w, neg_zero],
 end
 
 @[simp] lemma ip_self_comm_eq (x : α) : (((ip_self x).re) : ℂ) = ip_self x :=
@@ -117,6 +132,27 @@ begin
     exact w,
 end
 
+@[simp] lemma swap_re (x y : α) : (x†y).re = (y†x).re :=
+begin
+    rw [conj_symm y x],
+    simp only [conj_re],
+end
+
+@[simp] lemma add_swap (x y : α) : x†y + y†x = 2*(x†y).re :=
+begin
+    rw [conj_symm y x],
+    simp [ext_iff],
+    ring,
+end
+
+@[simp] lemma add_in_snd_coord (x y z : α) : x†(y+z) = (x†y)+(x†z) :=
+begin
+    have h := linearity y z x 1,
+    simp only [one_smul, one_mul] at h,
+    rw [←conj_inj, conj_add, ←conj_symm, ←conj_symm x y, ←conj_symm] at h,
+    exact h,
+end
+
 @[simp] lemma mul_in_snd_coord (x y : α) (a : ℂ) : x † (a • y) = (conj a) * (x†y) :=
 begin
     rw [conj_symm],
@@ -128,12 +164,11 @@ begin
     exact h,
 end
 
-@[simp] lemma add_in_snd_coord (x y z : α) : x†(y+z) = (x†y)+(x†z) :=
+@[simp] lemma ip_self_add (x y : α) : (ip_self (x+y)).re = (ip_self x).re + 2*(x†y).re + (ip_self y).re :=
 begin
-    have h := linearity y z x 1,
-    simp only [one_smul, one_mul] at h,
-    rw [←conj_inj, conj_add, ←conj_symm, ←conj_symm x y, ←conj_symm] at h,
-    exact h,
+    dsimp [ip_self],
+    simp,
+    ring,
 end
 
 end inner_product_space
