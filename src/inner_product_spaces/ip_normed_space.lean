@@ -221,8 +221,28 @@ end
 instance ip_space_is_normed_space : normed_space ℂ α :=
 {norm_smul := ip_norm_smul}
 
-class parallelopotamus (α : Type*) [add_comm_group α] [vector_space ℂ α] extends normed_space ℂ α :=
+class parallelizable (α : Type*) [add_comm_group α] [vector_space ℂ α] extends normed_space ℂ α :=
 (parallelogram_law : ∀ (x y : α), ∥x+y∥^2+∥x-y∥^2=2*∥x∥^2+2*∥y∥^2)
 
+theorem ip_parallelogram_law (x y : α) : ∥x+y∥^2+∥x-y∥^2=2*∥x∥^2+2*∥y∥^2 :=
+begin
+    simp,
+    dsimp [ip_self],
+    have w : (x†-y).re = -(x†y).re, begin
+        rw [←neg_one_smul ℂ y],
+        have k : ((-1 : ℝ) : ℂ) = (-1 : ℂ), begin
+            rw [ext_iff]
+        end,
+        rw [←k, mul_re_in_snd],
+        ring,
+    end,
+    rw [w],
+    simp,
+    ring,
+end
 
+-- theorem jordan_von_neumann {α : Type*} [normed_space ℂ α] : parallelopotamus α ↔ inner_product_space α :=
+-- begin
+
+-- end
 
