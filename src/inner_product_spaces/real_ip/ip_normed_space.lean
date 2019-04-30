@@ -224,7 +224,7 @@ instance ip_space_is_normed_space : normed_space ℝ α :=
 {norm_smul := ip_norm_smul}
 .
 
-lemma norm_neq_zero_iff_neq_zero (x : α) : ∥x∥ ≠ 0 ↔ x ≠ 0 :=
+lemma norm_neq_zero_iff_neq_zero {β : Type*} [normed_space ℝ β] (x : β) : ∥x∥ ≠ (0 : ℝ) ↔ x ≠ (0 : β) :=
 begin
     split,
 
@@ -234,5 +234,21 @@ begin
     apply mt,
     exact (norm_eq_zero x).1,
 end
+
+lemma norm_eq_iff_norm_sq_eq {β : Type*} [normed_space ℝ β] {x y : β} : ∥x∥=∥y∥ ↔ ∥x∥^2 = ∥y∥^2 :=
+begin
+    split,
+
+    intros h,
+    have w := congr_arg (λ (r : ℝ), r^2) h,
+    simp at w,
+    exact w,
+
+    intros h,
+    have w := congr_arg (λ (r : ℝ), sqrt r) h,
+    simp at w,
+    exact w,
+end
+
 
 

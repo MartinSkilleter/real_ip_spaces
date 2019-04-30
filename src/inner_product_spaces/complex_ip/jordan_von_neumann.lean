@@ -7,8 +7,6 @@ variables [decidable_eq α] [add_comm_group α] [vector_space ℂ α] [ℂ_inner
 
 open complex
 
-section complex_ip
-
 theorem ip_parallelogram_law (x y : α) : ∥x+y∥^2+∥x-y∥^2=2*∥x∥^2+2*∥y∥^2 :=
 begin
     simp,
@@ -32,12 +30,12 @@ begin
     ring,
 end
 
-class parallelopotamus (β : Type*) [add_comm_group β] [vector_space ℂ β] extends normed_space ℂ β :=
+class ℂ_parallelopotamus (β : Type*) [add_comm_group β] [vector_space ℂ β] extends normed_space ℂ β :=
 (parallelogram_law : ∀ (x y : β), ∥x+y∥^2+∥x-y∥^2=2*∥x∥^2+2*∥y∥^2)
 
 variables {β : Type*}
 variables [decidable_eq β] [add_comm_group β] [vector_space ℂ β] [normed_space ℂ β]
-variables [parallelopotamus β] [has_norm β]
+variables [ℂ_parallelopotamus β] [has_norm β]
 
 def par_inner_product (x y : β) : ℂ := 1/4*(∥x+y∥^2 + ∥x-y∥^2 + I*∥x+I•y∥^2 + -I*∥x-I•y∥^2)
 
@@ -57,4 +55,3 @@ begin
     sorry,
 end
 
-end complex_ip

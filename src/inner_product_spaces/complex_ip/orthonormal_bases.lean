@@ -9,8 +9,6 @@ open complex set module submodule
 
 variables [decidable_eq α] [add_comm_group α] [vector_space ℂ α] [ℂ_inner_product_space α]
 
-section complex_ip
-
 def orthog_set (L : set α) : Prop :=
 ∀ (a b ∈ L), a ≠ b → a ⊥ b
 
@@ -119,5 +117,3 @@ begin
     dsimp [span],
     sorry,
 end
-
-end complex_ip
