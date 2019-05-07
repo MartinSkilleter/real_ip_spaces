@@ -1,5 +1,4 @@
 import inner_product_spaces.real_ip.basic
-import linear_algebra.tensor_product
 
 -- Ask Scott how to fix this
 set_option class.instance_max_depth 100
@@ -11,9 +10,6 @@ open complex
 variables {α : Type*} {β : Type*}
 variables [decidable_eq α] [add_comm_group α] [vector_space ℝ α] [ℝ_inner_product_space α]
 variables [decidable_eq β] [add_comm_group β] [vector_space ℝ β] [ℝ_inner_product_space β]
-
-precedence `⊗` : 70
-infix `⊗` := tensor_product ℝ
 
 instance prod_vector_space : vector_space ℝ (α×β) := by apply_instance
 
@@ -74,9 +70,3 @@ instance prod_inner_product_space : ℝ_inner_product_space (α×β) :=
 {conj_symm := prod_conj_symm, linearity := prod_linearity, pos_def := prod_pos_def}
 
 end cartesian_prod
-
-section tensor_prod
-
-instance tens_vector_space : vector_space ℝ (α ⊗ β) := by constructor
-
-end tensor_prod

@@ -26,8 +26,6 @@ class ℝ_parallelopotamus (β : Type*) extends normed_space ℝ β :=
 variables {β : Type*}
 variables [decidable_eq β] [par : ℝ_parallelopotamus β]
 
-instance has_norm_β : has_norm β := normed_space_ℝ_β.to_normed_group.to_has_norm
-
 -- set_option trace.class_instances true
 def par_inner_product (x y : β) : ℝ := 1/4*(∥x+y∥^2 - ∥x-y∥^2)
 
