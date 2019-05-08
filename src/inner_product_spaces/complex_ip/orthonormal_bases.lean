@@ -270,11 +270,8 @@ end
 variables {S : set α}
 variables [add_comm_group S] [vector_space ℂ S] [subspace ℂ S]
 
-instance α_has_zero : has_zero α := by apply_instance
-
-set_option pp.implicit true
 set_option trace.class_instances true
-lemma perp_closed : ∀ (x y : α), (x ∈ perp S) → (y ∈ perp S) → ((x + y) ∈ perp S) :=
+lemma perp_closed : ∀ (x y : α), (x ∈ perp S) → (y ∈ perp S) → ((x+y) ∈ perp S) :=
 begin
     -- intros x y h₁ h₂,
     -- dsimp [perp] at *,
@@ -285,6 +282,10 @@ begin
     -- rw [add_in_fst_coord, h₁, h₂],
     sorry,
 end
+
+instance perp_has_add : has_add (perp S) := ⟨λ x y : α, @has_add.add α sorry x y⟩
+
+
 
 lemma perp_add_assoc (x y z : perp S) : (x + y) + z = x + (y + z) :=
 begin
