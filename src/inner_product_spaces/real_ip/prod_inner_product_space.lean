@@ -1,4 +1,5 @@
 import inner_product_spaces.real_ip.basic
+import linear_algebra.tensor_product
 
 -- Ask Scott how to fix this
 set_option class.instance_max_depth 100
@@ -70,3 +71,18 @@ instance prod_inner_product_space : ℝ_inner_product_space (α×β) :=
 {conj_symm := prod_conj_symm, linearity := prod_linearity, pos_def := prod_pos_def}
 
 end cartesian_prod
+
+section tensor_prod
+
+local infix ` ⊗ `:100 := tensor_product _
+local notation M ` ⊗[`:100 R `] ` N:100 := tensor_product R M N
+
+instance tens_vector_space : vector_space ℝ (α ⊗[ℝ] β) :=
+{}
+
+-- def tens_inner_product (x y : (α ⊗[ℝ] β)) : ℝ := (x.1†y.1) * (x.2†y.2)
+
+instance tens_has_inner_product : has_ℝ_inner_product (α ⊗[ℝ] β) :=
+⟨tens_inner_product⟩
+
+end tensor_prod

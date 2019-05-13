@@ -294,7 +294,7 @@ begin
     sorry,
 end
 
--- lemma perp_int_singleton (S : set α) : perp S = sInter {insert a ∅ | a ∈ S} :=
+-- lemma perp_int_singleton (S : set α) : perp S = ⋂₀ {{a} | a ∈ S}:=
 -- begin
 --     -- sInter_mem
 -- end
@@ -328,7 +328,7 @@ begin
     exact k,
 end
 
-instance perp_has_add : has_add (perp S) := ⟨λ x y, (x : α) + (y : α)⟩
+def perp_has_add : has_add (perp S) := ⟨λ x y, (x : α) + (y : α)⟩
 
 lemma perp_add_assoc (x y z : perp S) : (x + y) + z = x + (y + z) :=
 begin
