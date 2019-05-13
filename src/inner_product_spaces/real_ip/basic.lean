@@ -1,10 +1,22 @@
 import analysis.normed_space.basic
+import tactic.basic
 
 noncomputable theory
 
 open real
 
 variables {α : Type*} {β : Type*}
+
+lemma awesome_mt {p q : Prop} [decidable p] [decidable q] : p → q ↔ (¬q → ¬p) :=
+begin
+    split,
+
+    exact mt,
+
+    have w := @mt ¬q ¬p,
+    rw [not_not, not_not] at w,
+    exact w,
+end
 
 class has_ℝ_inner_product (α : Type*) := (inner_product : α → α → ℝ)
 
@@ -27,11 +39,9 @@ lemma linearity (x y z : α) (a : ℝ) : (a • x + y) † z = a * (x † z) + y
 by apply ℝ_inner_product_space.linearity
 
 @[simp] lemma add_in_fst_coord (x y z : α) : (x + y) † z = x † z + y † z :=
-begin
-    have h := linearity x y z 1,
+by {have h := linearity x y z 1,
     simp only [one_mul, one_smul] at h,
-    exact h,
-end
+    exact h}
 
 lemma pos_def (x : α) : x ≠ 0 → inner_product x x > 0 :=
 by apply ℝ_inner_product_space.pos_def
@@ -52,6 +62,14 @@ begin
     exact h,
 end
 
+lemma zero_of_orthog_to_all {y : α} : (∀ (x : α), x † y = 0) → y = 0 :=
+begin
+    intros h,
+    have w := mt (pos_def y),
+    simp [le_iff_lt_or_eq] at w,
+    exact (w (or.inr (h y))),
+end
+
 @[simp] lemma mul_in_fst_coord (x z : α) (a : ℝ) : (a•x)†z = a*(x†z) :=
 begin
     have h := linearity x 0 z a,
@@ -69,13 +87,9 @@ end
 
 lemma zero_of_self_ip_zero (x : α) : ip_self x = 0 → x = 0 :=
 begin
+    rw awesome_mt,
     intros h,
-    by_contradiction,
-    have w := pos_def x a,
-    dsimp [ip_self] at h,
-    have k₁ : x†x ≤ 0, by rw [←h],
-    have k₂ := not_lt_of_le k₁,
-    contradiction,
+    exact (ne_of_gt (pos_def x h)),
 end
 
 lemma zero_iff_ip_self_zero (x : α) : ip_self x=0 ↔ x=0 :=

@@ -35,9 +35,9 @@ begin
     dsimp [dist],
     rw [real.sqrt_inj (ip_self_nonneg (x+-y)) (ip_self_nonneg (y+-x))],
     dsimp [ip_self],
-    have w := linearity (x+-y) 0 (x+-y) (-1),
+    have w := @linearity α _ _ _ _ (x+-y) 0 (x+-y) (-1),
     simp [-add_in_snd_coord, -add_in_fst_coord] at w,
-    have k := mul_in_snd_coord (y+-x) (y+-x) (-1),
+    have k := @mul_in_snd_coord α _ _ _ _ (y+-x) (y+-x) (-1),
     simp [-add_in_snd_coord, -add_in_fst_coord] at k,
     rw [w] at k,
     exact (neg_inj k),
@@ -65,7 +65,7 @@ lemma orthog_symm {x y : α} : x ⊥ y → y ⊥ x :=
 begin
     intros h,
     dsimp [orthog] at h,
-    have w := (conj_symm x y).symm,
+    have w := (@conj_symm α _ _ _ _ x y).symm,
     rw [h] at w,
     exact w,
 end
@@ -77,6 +77,9 @@ begin
     dsimp [orthog] at w,
     exact w,
 end
+
+lemma add_orthog {x y z : α} : x⊥z → y⊥z → (x+y)⊥z :=
+by {intros hx hy, dsimp [orthog] at *, rw [add_in_fst_coord, hx, hy, add_zero]}
 
 @[simp] lemma mul_orthog {x y : α} {a b : ℝ} : x ⊥ y → (a•x) ⊥ (b•y) :=
 begin
@@ -95,7 +98,7 @@ begin
     simp only [sqr_norm],
     dsimp [ip_self],
     simp,
-    have w := conj_symm x y,
+    have w := @conj_symm α _ _ _ _ x y,
     rw [h] at w,
     rw [h,←w],
     simp only [zero_add],
@@ -104,7 +107,7 @@ end
 
 instance : has_norm ℝ := ⟨abs⟩ 
 
-@[simp] theorem cauchy_schwarz (x y : α) : ∥x†y∥≤∥x∥*∥y∥ :=
+@[simp] theorem cauchy_schwarz {x y : α} : ∥x†y∥≤∥x∥*∥y∥ :=
 begin
     by_cases (y=0),
 
@@ -131,12 +134,12 @@ begin
     repeat {rw [←neg_one_smul ℝ (c•y)] at w},
     repeat {rw [mul_in_fst_coord] at w},
     repeat {rw [mul_in_snd_coord] at w},
-    rw [conj_symm y x] at w,
+    rw [@conj_symm α _ _ _ _ y x] at w,
     simp at w,
     have k : c = (x†y)/∥y∥^2 := by refl,
     rw [k] at w,
     clear k,
-    have k := (neq_zero_iff_ip_self_neq_zero y).2 h,
+    have k := (@neq_zero_iff_ip_self_neq_zero α _ _ _ _ y).2 h,
     simp only [sqr_norm] at w,
     have w₁ := div_mul_cancel (x†y) k,
     dsimp [ip_self] at *,
@@ -146,7 +149,7 @@ begin
     clear w₁ w,
     have w₃ : (x†y)/(y†y) = (x†y)*(y†y)⁻¹ := by refl,
     rw [mul_comm, w₃, ←mul_assoc, ←pow_two] at w₂,
-    have w₄ := ip_self_nonneg y,
+    have w₄ := @ip_self_nonneg α _ _ _ _ y,
     dsimp [ip_self] at w₄,
     have w₅ := mul_le_mul_of_nonneg_right w₂ w₄,
     rw [mul_assoc, inv_mul_cancel k, mul_one] at w₅,
@@ -173,11 +176,11 @@ begin
     ring SOP,
     rw [←pow_two],
     repeat {rw [sqr_norm]},
-    rw [ip_self_add x y, add_assoc, add_assoc, add_le_add_iff_left (ip_self x),
+    rw [ip_self_add, add_assoc, add_assoc, add_le_add_iff_left (ip_self x),
     add_le_add_iff_right, mul_assoc, mul_comm ∥y∥ 2, ←mul_assoc,
     mul_comm ∥x∥ 2, mul_assoc,
     @mul_le_mul_left _ _ (x†y) _ 2 (by linarith)],
-    have k' := cauchy_schwarz x y,
+    have k' := @cauchy_schwarz α _ _ _ _ x y,
     exact le_trans (le_max_left _ _) k',
 end
 
@@ -200,7 +203,8 @@ instance ip_space_is_metric_space : metric_space α :=
 {dist_self := ip_dist_self, eq_of_dist_eq_zero := ip_eq_of_dist_eq_zero, 
 dist_comm := ip_dist_comm, dist_triangle := ip_dist_triangle}
 
-instance ip_space_is_normed_group : normed_group α :=
+-- not an instance for now, causes trouble
+def ip_space_is_normed_group : normed_group α :=
 {dist_eq := ip_dist_eq}
 
 lemma sqr_abs (r : ℝ) : r^2 = (abs r)^2 :=
@@ -220,8 +224,9 @@ begin
     rw [←mul_assoc, ←pow_two, sqr_abs],
 end
 
-instance ip_space_is_normed_space : normed_space ℝ α :=
-{norm_smul := ip_norm_smul}
+def ip_space_is_normed_space : normed_space ℝ α :=
+{norm_smul := ip_norm_smul,
+ .. ip_space_is_normed_group}
 .
 
 lemma norm_neq_zero_iff_neq_zero {β : Type*} [normed_space ℝ β] (x : β) : ∥x∥ ≠ (0 : ℝ) ↔ x ≠ (0 : β) :=
