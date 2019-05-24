@@ -20,7 +20,15 @@ def is_lin_bound (T : α →ₗ[ℝ] β) (M : ℝ) := ∀ (x : α), ∥T x∥ �
 
 def linear_bounds (T : α →ₗ[ℝ] β) : set ℝ := {M | M ≥ 0 ∧ is_lin_bound T M}
 
-instance operators_has_norm : has_norm (α →ₗ[ℝ] β) := ⟨λ T, Inf (linear_bounds T)⟩
+def is_lin_bounded (T : α →ₗ[ℝ] β) := ∃ (M ≥ 0), is_lin_bound T M
+
+structure bounded_linear_operator 
+(α : Type*) (β : Type*) [add_comm_group α] [vector_space ℝ α] [ℝ_inner_product_space α]
+[decidable_eq α] [decidable_eq β] [add_comm_group β] [vector_space ℝ β] [ℝ_inner_product_space β]:=
+(T : α →ₗ[ℝ] β)
+(has_bound : is_lin_bounded T)
+
+instance bounded_has_norm : has_norm (bounded_linear_operator α β) := ⟨λ T, Inf (linear_bounds T.T)⟩
 
 lemma add_respects_sum {T S : α →ₗ[ℝ] β} : ∀ (x y : α), T (x + y) + S (x + y) = T x + S x + (T y + S y) :=
 by {intros x y, simp}
@@ -31,6 +39,35 @@ by {intros c x, simp, rw [←smul_add]}
 instance operators_has_add : has_add (α →ₗ[ℝ] β) := 
 ⟨λ T S, linear_map.mk (λ x, T x + S x) add_respects_sum add_respects_smul⟩
 
+lemma add_le {a b c d : ℝ} : a ≤ b → c ≤ d → a + c ≤ b + d :=
+begin
+    intros h w,
+    have k₁ := @add_le_add_right' ℝ _ a b c h,
+    have k₂ := @add_le_add_left' ℝ _ _ _ b w,
+    exact le_trans k₁ k₂,
+end
+
+lemma add_is_bounded {T S : α →ₗ[ℝ] β} (hT : is_lin_bounded T) (hS : is_lin_bounded S) : is_lin_bounded (T + S) :=
+begin
+    dsimp [is_lin_bounded] at *,
+    cases hT with M₁ hT,
+    cases hT with h₁ hT,
+    cases hS with M₂ hS,
+    cases hS with h₂ hS,
+    use (M₁ + M₂),
+    use (add_nonneg h₁ h₂),
+    dsimp [is_lin_bound] at *,
+    intros x,
+    have hT' := hT x,
+    have hS' := hS x,
+    apply le_trans (triangle_ineq (T x) (S x)),
+    rw [right_distrib],
+    exact add_le hT' hS',
+end
+
+instance bounded_has_add : has_add (bounded_linear_operator α β) := 
+⟨λ T S, bounded_linear_operator.mk (T.T + S.T) (add_is_bounded T.has_bound S.has_bound)⟩ 
+
 lemma zero_respects_add : ∀ (x y : α), (λ x, (0 : β)) (x + y) = (λ x, (0 : β)) x + (λ x, (0 : β)) y :=
 by {intros x y, simp}
 
@@ -40,6 +77,18 @@ by {intros c x, simp}
 instance operators_has_zero : has_zero (α →ₗ[ℝ] β) :=
 ⟨linear_map.mk (λ x, 0) zero_respects_add zero_respects_smul⟩
 
+lemma zero_has_bound : ∃ (M ≥ 0), is_lin_bound (0 : α →ₗ[ℝ] β) M :=
+begin
+    use 0,
+    use le_refl 0,
+    dsimp [is_lin_bound],
+    intros x,
+    simp,
+end
+
+instance bounded_has_zero : has_zero (bounded_linear_operator α β) :=
+⟨bounded_linear_operator.mk (0 : α →ₗ[ℝ] β) zero_has_bound⟩
+
 lemma neg_respects_add {T : α →ₗ[ℝ] β} : ∀ (x y : α), - T (x + y) = - T x + - T y :=
 by {intros x y, simp}
 
@@ -48,6 +97,23 @@ by {intros c x, simp}
 
 instance operators_has_neg : has_neg (α →ₗ[ℝ] β) :=
 ⟨λ T, linear_map.mk (λ x, - T x) neg_respects_add neg_respects_smul⟩
+
+lemma neg_is_bounded {T : α →ₗ[ℝ] β} (hT : is_lin_bounded T) : is_lin_bounded (-T) :=
+begin
+    cases hT with M hT,
+    cases hT with h hT,
+    dsimp [is_lin_bounded, is_lin_bound] at *,
+    use M,
+    use h,
+    simp only [norm_neg],
+    exact hT,
+end 
+
+instance bounded_has_neg : has_neg (bounded_linear_operator α β) :=
+⟨λ T, bounded_linear_operator.mk (-T.T) (neg_is_bounded T.has_bound)⟩ 
+
+instance bounded_has_sub : has_sub (bounded_linear_operator α β) :=
+⟨λ T S, T + -S⟩
 
 @[simp] lemma operators_add_assoc : ∀ (T S R : α →ₗ[ℝ] β), (T + S) + R = T + (S + R) :=
 by {intros T S R, simp}
@@ -70,7 +136,7 @@ instance operators_add_comm_group : add_comm_group (α →ₗ[ℝ] β) :=
  neg := has_neg.neg, add_left_neg := operators_add_left_neg,
  add_comm := operators_add_comm}
 
-instance operators_has_dist : has_dist (α →ₗ[ℝ] β) := ⟨λ T S, ∥T-S∥⟩
+instance bounded_has_dist : has_dist (bounded_linear_operator α β) := ⟨λ T S, ∥T-S∥⟩
 
 instance operators_has_decidable_eq : decidable_eq (α →ₗ[ℝ] β) := sorry
 
@@ -115,7 +181,8 @@ by {intros T, dsimp [dist], simp}
 lemma operators_norm_nonneg : ∀ (T : α →ₗ[ℝ] β), ∥T∥ ≥ 0 :=
 begin
     intros T,
-    dsimp [norm, linear_bounds],
+    dsimp [norm],
+    have w := lb_le_Inf (linear_bounds T),
     sorry,
 end
 

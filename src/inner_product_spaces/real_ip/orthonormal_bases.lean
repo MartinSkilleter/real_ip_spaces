@@ -285,6 +285,8 @@ begin
     exact w,
 end
 
+def ip_map (x : α) := λ y, x † y
+
 lemma perp_singleton_closed (x : α) : @is_closed α _ (perp {x}) :=
 begin
     rw [is_closed_iff_nhds],
@@ -294,20 +296,53 @@ begin
     sorry,
 end
 
--- lemma perp_int_singleton (S : set α) : perp S = ⋂₀ {{a} | a ∈ S}:=
--- begin
---     -- sInter_mem
--- end
+lemma perp_int_singleton (S : set α) : perp S = ⋂₀ {L | ∃ (a ∈ S), L = perp ({a})} :=
+begin
+    ext x,
+    rw [mem_sInter],
+    split,
+
+    intros h t w,
+    simp at w,
+    cases w with a w,
+    cases w,
+    dsimp [perp] at *,
+    rw [w_right],
+    simp,
+    exact h a w_left,
+
+    intros h,
+    dsimp [perp] at *,
+    intros y w,
+    have k := h {y},
+    simp at k,
+    sorry,
+end
+
+lemma perp_singleton_expr (S : set α) {t : set α}: t ∈ {L : set α | ∃ (a : α) (H : a ∈ S), L = perp {a}} → ∃ (a ∈ S), t = perp {a} :=
+begin
+    intros h,
+    simp at h,
+    cases h with a h,
+    cases h,
+    use a,
+    use h_left,
+    exact h_right,
+end
+
+theorem perp_space_closed (S : set α) : @is_closed α _ (perp S) :=
+begin
+    rw [perp_int_singleton],
+    apply @is_closed_sInter α _ _,
+    intros t h,
+    have k := perp_singleton_expr S h,
+    cases k with a k,
+    cases k with k₁ k₂,
+    rw [k₂],
+    exact perp_singleton_closed a,
+end
 
 variables {S : set α}
-
--- set_option trace.class_instances true
--- structure orthog_proj {α : Type*} [add_comm_group α] [vector_space ℝ α] [ℝ_inner_product_space α] :=
--- (f : α → α)
--- (lin_map : is_linear_map f)
--- (S : set α)
--- (id_on_S : ∀ (s ∈ S), f s = s)
--- (zero_on_perp : ∀ (s ∈ perp S), f s = 0)
 
 lemma perp_add_closed {x y : α} {hx : x ∈ perp S} {hy : y ∈ perp S} : x + y ∈ perp S :=
 begin
@@ -328,11 +363,81 @@ begin
     exact k,
 end
 
-def perp_has_add : has_add (perp S) := ⟨λ x y, (x : α) + (y : α)⟩
+instance perp_has_add : has_add (perp S) := 
+⟨λ x y, ⟨x.val + y.val, @perp_add_closed _ _ _ _ _ S _ _ x.property y.property⟩⟩
 
 lemma perp_add_assoc (x y z : perp S) : (x + y) + z = x + (y + z) :=
 begin
-    sorry,
+    dsimp [(+)],
+    simp only [subtype.mk_eq_mk],
+    exact (add_assoc _ _ _),
 end
+
+lemma zero_in_perp : (0 : α) ∈ perp S :=
+begin
+    dsimp [perp],
+    intros y h,
+    exact right_orthog_to_zero y,
+end
+
+instance perp_has_zero : has_zero (perp S) :=
+begin
+    constructor,
+    use (0 : α),
+    exact zero_in_perp,
+end
+
+lemma perp_zero_add (x : perp S) : 0 + x = x :=
+begin
+    dsimp [(+)],
+    have h : add_semigroup.add ((0 : perp S).val) (x.val) = x.val := by exact zero_add x.val,
+    simp [h],
+end
+
+lemma perp_add_comm (x y : perp S) : x + y = y + x :=
+begin
+    dsimp [(+)],
+    have h : add_semigroup.add x.val y.val = add_semigroup.add y.val x.val := by exact add_comm x.val y.val,
+    simp [h],
+end
+
+lemma perp_add_zero (x : perp S) : x + 0 = x:=
+by {rw [perp_add_comm], exact perp_zero_add x}
+
+lemma neg_in_perp (x : α) : x ∈ perp S → -x ∈ perp S :=
+begin
+    intros h,
+    dsimp [perp] at *,
+    intros y w,
+    rw [←@neg_one_smul ℝ α _, ←one_smul ℝ y],
+    exact mul_orthog (h y w),
+end
+
+instance perp_has_neg : has_neg (perp S) :=
+begin
+    constructor,
+    intros x,
+    use (-(x : α)),
+    have h : (x : α) ∈ perp S := by simp,
+    exact neg_in_perp (x : α) h,
+end
+
+lemma perp_add_left_neg (x : perp S) : -x + x = 0 :=
+begin
+    dsimp [(+), has_neg.neg],
+    have h : add_semigroup.add (add_group.neg ↑x) (x.val) = 0 := by exact add_left_neg _,
+    simp [h],
+    refl,
+end
+
+instance perp_add_comm_group : add_comm_group (perp S) :=
+{add := (+), add_assoc := perp_add_assoc, zero := 0, zero_add := perp_zero_add,
+ add_zero := perp_add_zero, neg := has_neg.neg, add_left_neg := perp_add_left_neg,
+ add_comm := perp_add_comm}
+
+instance perp_vector_space : vector_space ℝ (perp S) :=
+sorry
+
+
 
 end perp_space

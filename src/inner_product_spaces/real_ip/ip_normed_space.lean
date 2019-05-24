@@ -199,13 +199,14 @@ begin
     exact triangle_ineq (x-y) (y-z),
 end
 
-instance ip_space_is_metric_space : metric_space α :=
+def ip_space_is_metric_space : metric_space α :=
 {dist_self := ip_dist_self, eq_of_dist_eq_zero := ip_eq_of_dist_eq_zero, 
 dist_comm := ip_dist_comm, dist_triangle := ip_dist_triangle}
 
 -- not an instance for now, causes trouble
 def ip_space_is_normed_group : normed_group α :=
-{dist_eq := ip_dist_eq}
+{dist_eq := ip_dist_eq,
+..ip_space_is_metric_space}
 
 lemma sqr_abs (r : ℝ) : r^2 = (abs r)^2 :=
 by rw [←sqrt_sqr_eq_abs, sqr_sqrt (pow_two_nonneg r)]
@@ -254,6 +255,3 @@ begin
     simp at w,
     exact w,
 end
-
-
-

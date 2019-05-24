@@ -1,5 +1,4 @@
 import inner_product_spaces.real_ip.ip_normed_space
-import tactic.where
 
 noncomputable theory
 
@@ -22,8 +21,6 @@ begin
     rw [w],
     simp,
     ring,
-end
-
 end
 
 class ℝ_parallelopotamus (β : Type*) [normed_space ℝ β] :=
@@ -101,13 +98,26 @@ begin
     sorry,
 end
 
-lemma par_add_in_fst_coord {x y z : β} : (x+y) † z = x † z + y † z :=
+-- lemma par_add_in_fst_coord {x y z : β} : (x+y) † z = x † z + y † z :=
+-- begin
+--     dsimp [(†)],
+--     rw [par_add_law, par_add_law],
+--     ring,
+--     rw [←left_distrib],
+--     apply congr_arg (λ (r : ℝ), 1/4*r),
+--     sorry,
+-- end
+
+lemma par_add_in_fst_coord {x y z : β} : (x+y)†z = x†z + y†z :=
 begin
+    have w := par_law (x+z) y,
+    have k := par_law (x-z) y,
+    have l := congr_arg2 (λ {a c : ℝ}, a - c) w k,
+    simp at l,
     dsimp [(†)],
-    rw [par_add_law, par_add_law],
-    ring,
     rw [←left_distrib],
-    apply congr_arg (λ (r : ℝ), 1/4*r),
+    apply congr_arg (λ (x : ℝ), 1/4 * x),
+    ring at *,
     sorry,
 end
 
@@ -177,24 +187,16 @@ begin
     sorry,
 end
 
-lemma eps_eq {a b : ℝ} : (∀ (ε > 0), abs (a - b) < ε) ↔ a = b :=
-begin
-    split,
-    
-    intros h,
-    by_contradiction w,
-    have k := mt sub_eq_zero.1 w,
-    sorry,
-
-    intros h ε w,
-    rw [sub_eq_zero.2 h, abs_zero],
-    exact w,
-end
-
 lemma par_smul_real {x z : β} : ∀ (r : ℝ), (r • x) † z = r * (x † z) :=
 begin
     intros r,
-    rw [←eps_eq],
-    intros ε h,
     sorry,
 end
+
+lemma par_linearity (x y z : β) (a : ℝ) : (a•x+y)†z = a*(x†z) + y†z :=
+begin
+    rw [par_add_in_fst_coord, par_smul_real],
+end
+
+instance par_is_ip_space : ℝ_inner_product_space β :=
+{conj_symm := par_conj_symm, linearity := par_linearity, pos_def := par_pos_def}
