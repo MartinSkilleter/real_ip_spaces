@@ -70,11 +70,35 @@ begin
     exact (w (or.inr (h y))),
 end
 
+lemma zero_of_orthog_to_all' {y : α} : (∀ (x : α), y † x = 0) → y = 0 :=
+begin
+    intros h,
+    apply @zero_of_orthog_to_all α _ _ _,
+    intros x,
+    have w := h x,
+    rw [conj_symm],
+    exact w,
+end
+
 @[simp] lemma mul_in_fst_coord (x z : α) (a : ℝ) : (a•x)†z = a*(x†z) :=
 begin
     have h := linearity x 0 z a,
     simp only [right_orthog_to_zero, add_zero] at h,
     exact h,
+end
+
+lemma ip_all_unique (x y : α) : (∀ (z : α), x†z = y†z) → x = y :=
+begin
+    intros h,
+    have k : ∀ (z : α), (x-y)†z = 0 := begin
+        intros z,
+        simp,
+        rw [←add_right_neg (y†z), ←neg_one_mul, ←mul_in_fst_coord, neg_one_smul],
+        apply (congr_arg (λ g, g + (-y)†z)),
+        exact h z,
+    end,
+    have k' := zero_of_orthog_to_all' k,
+    exact sub_eq_zero.1 k',
 end
 
 def ip_self : α → ℝ := λ x, x†x

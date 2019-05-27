@@ -1,19 +1,20 @@
 import inner_product_spaces.real_ip.hilbert_space
 import linear_algebra.basis
+import tactic.interactive
 
 noncomputable theory
 
 variables {α : Type*}
 
-open real set module submodule
+open real set module submodule linear_map 
 
 variables [decidable_eq α] [add_comm_group α] [vector_space ℝ α] [ℝ_inner_product_space α]
 
 section norm_known
 
-instance normed_space_ℝ_α : normed_space ℝ α := ip_space_is_normed_space
+def α_normed_space : normed_space ℝ α := ip_space_is_normed_space
 
-instance α_topological_space : topological_space α := by apply_instance
+local attribute [instance] α_normed_space
 
 def orthog_set (L : set α) : Prop :=
 ∀ (a b ∈ L), a ≠ b → a ⊥ b
@@ -116,7 +117,6 @@ begin
     exact w,
 end
 
-
 lemma orthog_normalised_of_orthog (L : set α) (h : orthog_set L) : orthog_set (normalise L) :=
 begin
     dsimp [orthog_set] at *,
@@ -146,9 +146,9 @@ end
 
 lemma orthog_set_is_lin_indep (L : set α) (h : orthog_set L) (w : (0 : α) ∉ L) : linear_independent ℝ L :=
 begin
-    dsimp [linear_independent, lc.total, lc.lsum, lc, lc.supported, disjoint],
-    
-    -- dsimp [lc],
+    rw [linear_independent_iff],
+    intros l k₁ k₂,
+    -- rw [linear_combination.mem_supported] at k₁,
     sorry,
 end
 
@@ -251,10 +251,14 @@ begin
     exact h_right,
 end
 
-set_option trace.eqn_compiler.elim_match true
-def gram_schmidt : set α → set α
-| false := false -- The emptyset
- 
+def gram_partial (s : ℕ → α) : ℕ → set α
+| 0 := {∥s 0∥⁻¹ • s 0}
+| n := sorry
+
+-- set_option trace.class_instances true
+-- def gram_schmidt (s : ℕ → α) : ℕ → α :=
+-- ⋃₀ {L | ∃ (n : ℕ), L = gram_partial s n} 
+
 end norm_known
 
 section perp_space
@@ -285,67 +289,11 @@ begin
     exact w,
 end
 
-def ip_map (x : α) := λ y, x † y
-
-lemma perp_singleton_closed (x : α) : @is_closed α _ (perp {x}) :=
-begin
-    rw [is_closed_iff_nhds],
-    intros a h,
-    simp at h,
-    dsimp [nhds, (⊥)] at h,
-    sorry,
-end
-
-lemma perp_int_singleton (S : set α) : perp S = ⋂₀ {L | ∃ (a ∈ S), L = perp ({a})} :=
-begin
-    ext x,
-    rw [mem_sInter],
-    split,
-
-    intros h t w,
-    simp at w,
-    cases w with a w,
-    cases w,
-    dsimp [perp] at *,
-    rw [w_right],
-    simp,
-    exact h a w_left,
-
-    intros h,
-    dsimp [perp] at *,
-    intros y w,
-    have k := h {y},
-    simp at k,
-    sorry,
-end
-
-lemma perp_singleton_expr (S : set α) {t : set α}: t ∈ {L : set α | ∃ (a : α) (H : a ∈ S), L = perp {a}} → ∃ (a ∈ S), t = perp {a} :=
-begin
-    intros h,
-    simp at h,
-    cases h with a h,
-    cases h,
-    use a,
-    use h_left,
-    exact h_right,
-end
-
-theorem perp_space_closed (S : set α) : @is_closed α _ (perp S) :=
-begin
-    rw [perp_int_singleton],
-    apply @is_closed_sInter α _ _,
-    intros t h,
-    have k := perp_singleton_expr S h,
-    cases k with a k,
-    cases k with k₁ k₂,
-    rw [k₂],
-    exact perp_singleton_closed a,
-end
-
 variables {S : set α}
 
-lemma perp_add_closed {x y : α} {hx : x ∈ perp S} {hy : y ∈ perp S} : x + y ∈ perp S :=
+lemma perp_add_closed (x y : α) : x ∈ perp S → y ∈ perp S → x + y ∈ perp S :=
 begin
+    intros hx hy,
     dsimp [perp] at *,
     intros z hz,
     have hz₁ := hx z hz,
@@ -353,8 +301,9 @@ begin
     exact add_orthog hz₁ hz₂,
 end
 
-lemma perp_mul_closed {x : α} {hx : x ∈ perp S} {c : ℝ} : c•x ∈ perp S :=
+lemma perp_smul_closed (c : ℝ) (x : α) : x ∈ perp S → c•x ∈ perp S :=
 begin
+    intros hx,
     dsimp [perp] at *,
     intros z hz,
     have hz₁ := hx z hz,
@@ -435,9 +384,322 @@ instance perp_add_comm_group : add_comm_group (perp S) :=
  add_zero := perp_add_zero, neg := has_neg.neg, add_left_neg := perp_add_left_neg,
  add_comm := perp_add_comm}
 
-instance perp_vector_space : vector_space ℝ (perp S) :=
-sorry
+def perp_subspace : submodule ℝ α :=
+{carrier := perp S, zero := zero_in_perp, add := perp_add_closed, smul := perp_smul_closed}
 
+lemma ker_simp {f : α →ₗ[ℝ] ℝ} {y : α} : y ∈ ker f ↔ y ∈ (ker f).carrier :=
+begin
+    rw [←submodule.mem_coe],
+    unfold_coes,
+end
 
+lemma perp_singleton_ker (x : α) : perp {x} = (linear_map.ker (ip_map x)).carrier :=
+begin
+    ext y,
+    rw [←ker_simp, mem_ker, ip_map_to_fun],
+    dsimp [perp],
+    split,
+
+    intros h,
+    have h₁ := h x (mem_singleton x),
+    dsimp [orthog] at h₁,
+    rw [conj_symm] at h₁,
+    exact h₁,
+
+    intros h z w,
+    have k := eq_of_mem_singleton w,
+    dsimp [orthog],
+    rw [conj_symm, k],
+    exact h,
+end
+
+lemma ip_map_ker_is_preimage_zero (x : α) : (linear_map.ker (ip_map x)).carrier = (ip_map x)⁻¹' {0} :=
+begin
+    ext,
+    rw [←perp_singleton_ker],
+    dsimp [preimage, perp] at *,
+    split,
+
+    intros h,
+    have k := h x (mem_singleton x),
+    dsimp [orthog] at k,
+    rw [conj_symm, k],
+    exact mem_singleton 0,
+
+    intros h y k,
+    have w := eq_of_mem_singleton k,
+    have w₁ := eq_of_mem_singleton h,
+    dsimp [orthog],
+    rw [w, conj_symm],
+    exact w₁,
+end
+
+lemma ip_map_ker_is_closed (x : α) : @is_closed α (α_topological_space) (linear_map.ker (ip_map x)).carrier :=
+begin
+    rw [ip_map_ker_is_preimage_zero],
+    apply ((@continuous_iff_is_closed α ℝ (α_topological_space) (ℝ_topological_space) (ip_map x)).1 (ip_map_is_continuous x) {0}),
+    exact is_closed_singleton,
+end
+
+lemma perp_singleton_closed (x : α) : @is_closed α (α_topological_space) (perp {x}) :=
+begin
+    rw [perp_singleton_ker],
+    exact ip_map_ker_is_closed x,
+end
+
+lemma perp_int_singleton (S : set α) : perp S = ⋂₀ {L | ∃ (a ∈ S), L = perp ({a})} :=
+begin
+    ext x,
+    rw [mem_sInter],
+    split,
+
+    intros h t w,
+    simp at w,
+    cases w with a w,
+    cases w,
+    dsimp [perp] at *,
+    rw [w_right],
+    simp,
+    exact h a w_left,
+
+    intros h y w,
+    simp at h,
+    have h₁ := h (perp {y}) y w rfl,
+    dsimp [perp] at h₁,
+    exact h₁ y (mem_singleton y),
+end
+
+lemma perp_singleton_expr (S : set α) {t : set α}: t ∈ {L : set α | ∃ (a : α) (H : a ∈ S), L = perp {a}} → ∃ (a ∈ S), t = perp {a} :=
+begin
+    intros h,
+    simp at h,
+    cases h with a h,
+    cases h,
+    use a,
+    use h_left,
+    exact h_right,
+end
+
+theorem perp_space_closed (S : set α) : @is_closed α (α_topological_space) (perp S) :=
+begin
+    rw [perp_int_singleton],
+    apply @is_closed_sInter α (α_topological_space) _,
+    intros t h,
+    have k := perp_singleton_expr S h,
+    cases k with a k,
+    cases k with k₁ k₂,
+    rw [k₂],
+    exact perp_singleton_closed a,
+end
 
 end perp_space
+
+section orthogonal_projection
+
+local attribute [instance] α_normed_space
+
+instance α_module : module ℝ α := by apply_instance
+
+variables [Hilbert_space α]
+variables {S : @submodule ℝ α _ _ _}
+variables {h : @is_closed α (α_topological_space) S.carrier}
+
+include h
+
+theorem proj_exists_unique (x : α) : ∃! (y : α), y ∈ S ∧ (∥x-y∥ = Inf {r | ∃ (z ∈ S), r = ∥x-z∥}) :=
+begin
+    sorry,
+end
+
+def orthog_proj (x : α) := classical.some (exists_of_exists_unique (@proj_exists_unique α _ _ _ _ _ S h x))
+
+lemma orthog_classical (x : α) : @orthog_proj α _ _ _ _ _ S h x = classical.some (exists_of_exists_unique (@proj_exists_unique α _ _ _ _ _ S h x)) := rfl
+
+lemma orthog_proj_mem (x : α) : @orthog_proj α _ _ _ _ _ S h x ∈ S :=
+begin
+    have w := classical.some_spec (exists_of_exists_unique (@proj_exists_unique α _ _ _ _ _ S h x)),
+    rw [←orthog_classical] at w,
+    cases w,
+    exact w_left,
+end
+
+lemma orthog_proj_dist (x : α) : ∥x -  @orthog_proj α _ _ _ _ _ S h x∥ = Inf {r | ∃ (z ∈ S), r = ∥x-z∥} :=
+begin
+    have w := classical.some_spec (exists_of_exists_unique (@proj_exists_unique α _ _ _ _ _ S h x)),
+    rw [←orthog_classical] at w,
+    cases w,
+    exact w_right,
+end
+
+lemma orthog_unique (x : α) : ∀ (y z : α), (y ∈ S ∧ (∥x-y∥ = Inf {r | ∃ (j ∈ S), r = ∥x-j∥})) ∧ (z ∈ S ∧ (∥x-z∥ = Inf {r | ∃ (j ∈ S), r = ∥x-j∥})) → y = z :=
+begin
+    intros y z w,
+    cases w,
+    have k := unique_of_exists_unique (proj_exists_unique x) w_left w_right,
+    exact k,
+    exact h,
+end
+
+lemma orthog_proj_suff (x y : α) : y ∈ S ∧ (∥x-y∥ = Inf {r | ∃ (z ∈ S), r = ∥x-z∥}) → y = @orthog_proj α _ _ _ _ _ S h x :=
+begin
+    intros w,
+    apply @orthog_unique α _ _ _ _ _ S h,
+    split,
+    exact w,
+    exact ⟨orthog_proj_mem x, orthog_proj_dist x⟩,
+end
+
+lemma orthog_proj_suff' (x y : α) : y ∈ S ∧ (∥x-y∥ = Inf {r | ∃ (z ∈ S), r = ∥x-z∥}) → @orthog_proj α _ _ _ _ _ S h x = y :=
+by {intros h, apply symm, exact orthog_proj_suff x y h}
+
+lemma orthog_of_orthog_proj_sub (x : α) : @orthog_proj α _ _ _ _ _ S h x ⊥ (x - @orthog_proj α _ _ _ _ _ S h x) :=
+begin
+    dsimp [orthog],
+    sorry, 
+end
+
+lemma dist_bounded_below (x : α): ∃ (l : ℝ), ∀ (y : ℝ), y ∈ {r : ℝ | ∃ (z ∈ S), r = ∥x - z∥} → l ≤ y :=
+begin
+    use 0,
+    intros y,
+    simp,
+    intros z w₁ w₂,
+    rw [w₂],
+    exact norm_nonneg _,
+end
+
+lemma dist_nonempty (x : α) : (∃ (r : ℝ), r ∈ {r : ℝ | ∃ (z : α) (H : z ∈ S), r = ∥x - z∥}) := 
+begin
+    use ∥x∥,
+    simp,
+    use 0,
+    split,
+
+    exact zero_mem S,
+
+    simp,
+end
+
+lemma orthog_id_on_S : ∀ (x ∈ S), @orthog_proj α _ _ _ _ _ S h x = x :=
+begin
+    intros x k,
+    apply symm,
+    apply orthog_proj_suff,
+    split,
+
+    exact k,
+    simp,
+    have w₁ : (0 : ℝ) ∈ {r : ℝ | ∃ (z : α) (H : z ∈ S), r = ∥x - z∥} := begin
+        simp,
+        use x,
+        split,
+
+        exact k,
+
+        simp,
+    end,
+    have w₂ := @Inf_le {r | ∃ (z ∈ S), r = ∥x-z∥} (dist_bounded_below x) 0 w₁,
+    have w₃ : (∀ (z : ℝ), z ∈ {r : ℝ | ∃ (z : α) (H : z ∈ S), r = ∥x - z∥} → 0 ≤ z) := begin
+        intros z k₁,
+        simp at k₁,
+        cases k₁,
+        cases k₁_h,
+        rw [k₁_h_right],
+        exact norm_nonneg _,
+    end,
+    have w₄ := (le_Inf {r | ∃ (z ∈ S), r = ∥x-z∥} (dist_nonempty _) (dist_bounded_below x)).2 w₃,
+    have w₅ := (antisymm w₂ w₄).symm,
+    simp at w₅,
+    exact w₅,
+
+    recover,
+    repeat {exact h},
+end
+.
+
+lemma orthog_zero_on_perp_S : ∀ (x ∈ perp S.carrier), @orthog_proj α _ _ _ _ _ S h x = 0 :=
+begin
+    intros x k,
+    apply orthog_proj_suff',
+    split,
+    
+    exact zero_mem S,
+    rw [sub_zero],
+    have w₁ : ∥x∥ ∈ {r : ℝ | ∃ (z : α) (H : z ∈ S), r = ∥x - z∥} := begin
+        simp,
+        use 0,
+        split,
+
+        exact zero_mem S,
+
+        simp,
+    end,
+    have w₂ := Inf_le {r | ∃ (z ∈ S), r = ∥x-z∥} (dist_bounded_below x) w₁,
+    have w₃ : (∃ (r : ℝ), r ∈ {r : ℝ | ∃ (z : α) (H : z ∈ S), r = ∥x - z∥}) := begin
+        use ∥x∥,
+        exact w₁,
+    end,
+    have w₄ : (∀ (z : ℝ), z ∈ {r : ℝ | ∃ (z : α) (H : z ∈ S), r = ∥x - z∥} → ∥x∥ ≤ z) := begin
+        intros r l,
+        simp at l,
+        cases l with z l,
+        cases l,
+        apply norm_leq_of_norm_sq_leq,
+
+        rw [l_right],
+        exact norm_nonneg _,
+
+        rw [l_right, pythagoras],
+        simp,
+        exact (ip_self_nonneg z),
+
+        dsimp [perp] at k,
+        have k₁ := @mul_orthog α _ _ _ _ x z 1 (-1) (k z l_left),
+        rw [one_smul, neg_one_smul] at k₁,
+        exact k₁,
+    end,
+    have w₅ := (le_Inf {r | ∃ (z ∈ S), r = ∥x-z∥} w₃ (dist_bounded_below x)).2 w₄,
+    exact (antisymm w₂ w₅).symm,
+    repeat {exact h},
+end
+
+lemma orthog_proj_add (x y : α) : @orthog_proj α _ _ _ _ _ S h (x+y) = @orthog_proj α _ _ _ _ _ S h x + @orthog_proj α _ _ _ _ _ S h y :=
+begin
+    apply orthog_proj_suff',
+    split,
+
+    exact add_mem S (orthog_proj_mem x) (orthog_proj_mem y),
+
+    have w₁ : ∥x + y - (orthog_proj x + orthog_proj y)∥ ∈ {r : ℝ | ∃ (z : α) (H : z ∈ S), r = ∥x + y - z∥} := sorry,
+    have w₂ := Inf_le {r | ∃ (z ∈ S), r = ∥x+y-z∥} (dist_bounded_below _) w₁,
+    have w₃ : ∀ (z : ℝ), z ∈ {r : ℝ | ∃ (z : α) (H : z ∈ S), r = ∥x + y - z∥} → ∥x + y - x∥ ≤ z := begin
+        sorry,
+    end,
+    have w₄ := (le_Inf {r | ∃ (z ∈ S), r = ∥x+y-z∥} (dist_nonempty _) (dist_bounded_below _)).2,
+    
+end
+
+-- lemma orthog_proj_smul (c : ℝ) (x : α) : @orthog_proj α _ _ _ _ _ S h (c • x) = c • (@orthog_proj α _ _ _ _ _ S h x) :=
+-- begin
+--     apply orthog_proj_suff',
+--     have w := smul_mem S c (orthog_proj_el x),
+--     split,
+    
+--     exact w,
+--     have w₁ : ∥c • x - c • orthog_proj x∥ ∈ {r : ℝ | ∃ (z ∈ S), r = ∥c • x - z∥} := begin
+--         simp,
+--         existsi (c•(orthog_proj x)),
+--         split,
+
+--         exact w,
+--         rw [add_comm],
+--     end,
+--     have w₂ := Inf_le {r | ∃ (z ∈ S), r = ∥c•x-z∥} (@dist_bounded_below α _ _ _ _ _ S h (c•x)) w₁,
+--     sorry,
+-- end
+-- .
+
+-- def orthog_proj_linear : is_linear_map ℝ (@orthog_proj α _ _ _ _ _ S _ _ sub h) :=
+-- {add := @orthog_proj_add α _ _ _ _ _ S _ _ sub h, smul := @orthog_proj_smul α _ _ _ _ _ S _ _ sub h}
+
+end orthogonal_projection

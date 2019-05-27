@@ -98,16 +98,6 @@ begin
     sorry,
 end
 
--- lemma par_add_in_fst_coord {x y z : β} : (x+y) † z = x † z + y † z :=
--- begin
---     dsimp [(†)],
---     rw [par_add_law, par_add_law],
---     ring,
---     rw [←left_distrib],
---     apply congr_arg (λ (r : ℝ), 1/4*r),
---     sorry,
--- end
-
 lemma par_add_in_fst_coord {x y z : β} : (x+y)†z = x†z + y†z :=
 begin
     have w := par_law (x+z) y,
@@ -184,6 +174,7 @@ begin
     have qh : q = r.denom := rfl,
     let h := r.pos,
     
+    rw [←qh] at h,
     sorry,
 end
 
@@ -200,3 +191,5 @@ end
 
 instance par_is_ip_space : ℝ_inner_product_space β :=
 {conj_symm := par_conj_symm, linearity := par_linearity, pos_def := par_pos_def}
+
+end

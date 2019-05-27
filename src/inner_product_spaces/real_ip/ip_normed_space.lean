@@ -255,3 +255,11 @@ begin
     simp at w,
     exact w,
 end
+
+lemma norm_leq_of_norm_sq_leq {β : Type*} [normed_space ℝ β] {x : β} {a : ℝ} {k : a ≥ 0}: ∥x∥^2 ≤ a^2 → ∥x∥ ≤ a :=
+begin
+    intros h,
+    have w := sqrt_le (mul_nonneg (norm_nonneg x) (norm_nonneg x)) (mul_nonneg k k),
+    rw [←pow_two, ←pow_two, sqrt_sqr (norm_nonneg _), sqrt_sqr k] at w,
+    exact w.2 h,
+end
