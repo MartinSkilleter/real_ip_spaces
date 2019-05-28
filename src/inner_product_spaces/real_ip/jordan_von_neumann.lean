@@ -69,7 +69,7 @@ begin
     end,
     rw [k, ←mul_assoc, inv_mul_cancel, one_mul],
 
-    sorry, -- Can't prove 0 ≠ 4
+    exact four_ne_zero,
 end
 
 lemma par_pos_def (x : β) : x ≠ (0 : β) → x†x > (0 : ℝ) :=

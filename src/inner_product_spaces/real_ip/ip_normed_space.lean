@@ -105,6 +105,20 @@ begin
 end
 .
 
+lemma orthog_of_pythagoras {x y : α} : ∥x+y∥^2 = ∥x∥^2 + ∥y∥^2 → x ⊥ y :=
+begin
+    intros h,
+    simp at h,
+    conv at h {to_rhs, rw [←add_zero (ip_self y)]},
+    have w := (add_left_inj _).mp h,
+    have k := congr_arg (λ (r : ℝ), 1/2 * r) w,
+    have l : ¬((2 : ℝ) = 0) := two_ne_zero,
+    simp at k,
+    repeat {cases k, exact absurd k l},
+    dsimp [orthog],
+    exact k,
+end
+
 instance : has_norm ℝ := ⟨abs⟩ 
 
 @[simp] theorem cauchy_schwarz {x y : α} : ∥x†y∥≤∥x∥*∥y∥ :=

@@ -6,7 +6,7 @@ noncomputable theory
 
 variables {α : Type*}
 
-open real set module submodule linear_map 
+open real set module submodule linear_map set
 
 variables [decidable_eq α] [add_comm_group α] [vector_space ℝ α] [ℝ_inner_product_space α]
 
@@ -102,7 +102,7 @@ begin
         rw [a_1] at k₁,
         contradiction,
     end,
-    rw [←k₂, ip_norm_smul],
+    rw [←k₂, ip_norm_smul, norm_inv, norm_norm],
     simp,
     exact (inv_mul_cancel ((norm_neq_zero_iff_neq_zero b).2 k₃)),
 end
@@ -384,10 +384,10 @@ instance perp_add_comm_group : add_comm_group (perp S) :=
  add_zero := perp_add_zero, neg := has_neg.neg, add_left_neg := perp_add_left_neg,
  add_comm := perp_add_comm}
 
-def perp_subspace : submodule ℝ α :=
+def perp_subspace : subspace ℝ α :=
 {carrier := perp S, zero := zero_in_perp, add := perp_add_closed, smul := perp_smul_closed}
 
-lemma ker_simp {f : α →ₗ[ℝ] ℝ} {y : α} : y ∈ ker f ↔ y ∈ (ker f).carrier :=
+lemma sub_simp {α : Type*} [add_comm_group α] [vector_space ℝ α] {S : subspace ℝ α} {y : α} : y ∈ S ↔ y ∈ S.carrier :=
 begin
     rw [←submodule.mem_coe],
     unfold_coes,
@@ -396,7 +396,7 @@ end
 lemma perp_singleton_ker (x : α) : perp {x} = (linear_map.ker (ip_map x)).carrier :=
 begin
     ext y,
-    rw [←ker_simp, mem_ker, ip_map_to_fun],
+    rw [←sub_simp, mem_ker, ip_map_to_fun],
     dsimp [perp],
     split,
 
@@ -498,8 +498,6 @@ section orthogonal_projection
 
 local attribute [instance] α_normed_space
 
-instance α_module : module ℝ α := by apply_instance
-
 variables [Hilbert_space α]
 variables {S : @submodule ℝ α _ _ _}
 variables {h : @is_closed α (α_topological_space) S.carrier}
@@ -552,12 +550,6 @@ end
 lemma orthog_proj_suff' (x y : α) : y ∈ S ∧ (∥x-y∥ = Inf {r | ∃ (z ∈ S), r = ∥x-z∥}) → @orthog_proj α _ _ _ _ _ S h x = y :=
 by {intros h, apply symm, exact orthog_proj_suff x y h}
 
-lemma orthog_of_orthog_proj_sub (x : α) : @orthog_proj α _ _ _ _ _ S h x ⊥ (x - @orthog_proj α _ _ _ _ _ S h x) :=
-begin
-    dsimp [orthog],
-    sorry, 
-end
-
 lemma dist_bounded_below (x : α): ∃ (l : ℝ), ∀ (y : ℝ), y ∈ {r : ℝ | ∃ (z ∈ S), r = ∥x - z∥} → l ≤ y :=
 begin
     use 0,
@@ -580,7 +572,7 @@ begin
     simp,
 end
 
-lemma orthog_id_on_S : ∀ (x ∈ S), @orthog_proj α _ _ _ _ _ S h x = x :=
+lemma orthog_proj_id_on_S : ∀ (x ∈ S), @orthog_proj α _ _ _ _ _ S h x = x :=
 begin
     intros x k,
     apply symm,
@@ -617,7 +609,7 @@ begin
 end
 .
 
-lemma orthog_zero_on_perp_S : ∀ (x ∈ perp S.carrier), @orthog_proj α _ _ _ _ _ S h x = 0 :=
+lemma orthog_proj_zero_on_perp_S : ∀ (x ∈ perp S.carrier), @orthog_proj α _ _ _ _ _ S h x = 0 :=
 begin
     intros x k,
     apply orthog_proj_suff',
@@ -644,10 +636,7 @@ begin
         simp at l,
         cases l with z l,
         cases l,
-        apply norm_leq_of_norm_sq_leq,
-
-        rw [l_right],
-        exact norm_nonneg _,
+        rw ←norm_sqr_leq_iff_norm_leq,
 
         rw [l_right, pythagoras],
         simp,
@@ -657,6 +646,8 @@ begin
         have k₁ := @mul_orthog α _ _ _ _ x z 1 (-1) (k z l_left),
         rw [one_smul, neg_one_smul] at k₁,
         exact k₁,
+        rw [l_right],
+        exact norm_nonneg _,
     end,
     have w₅ := (le_Inf {r | ∃ (z ∈ S), r = ∥x-z∥} w₃ (dist_bounded_below x)).2 w₄,
     exact (antisymm w₂ w₅).symm,
@@ -666,40 +657,165 @@ end
 lemma orthog_proj_add (x y : α) : @orthog_proj α _ _ _ _ _ S h (x+y) = @orthog_proj α _ _ _ _ _ S h x + @orthog_proj α _ _ _ _ _ S h y :=
 begin
     apply orthog_proj_suff',
+    have w := add_mem S (orthog_proj_mem x) (orthog_proj_mem y),
     split,
 
-    exact add_mem S (orthog_proj_mem x) (orthog_proj_mem y),
+    exact w,
 
-    have w₁ : ∥x + y - (orthog_proj x + orthog_proj y)∥ ∈ {r : ℝ | ∃ (z : α) (H : z ∈ S), r = ∥x + y - z∥} := sorry,
-    have w₂ := Inf_le {r | ∃ (z ∈ S), r = ∥x+y-z∥} (dist_bounded_below _) w₁,
-    have w₃ : ∀ (z : ℝ), z ∈ {r : ℝ | ∃ (z : α) (H : z ∈ S), r = ∥x + y - z∥} → ∥x + y - x∥ ≤ z := begin
-        sorry,
+    have w₁ : ∥x + y - (orthog_proj x + orthog_proj y)∥ ∈ {r : ℝ | ∃ (z : α) (H : z ∈ S), r = ∥x + y - z∥} := begin
+        simp,
+        existsi (orthog_proj x + orthog_proj y),
+        split,
+
+        exact w,
+
+        simp,
     end,
-    have w₄ := (le_Inf {r | ∃ (z ∈ S), r = ∥x+y-z∥} (dist_nonempty _) (dist_bounded_below _)).2,
+    have w₂ := Inf_le {r | ∃ (z ∈ S), r = ∥x+y-z∥} (dist_bounded_below _) w₁,
+    have w₃ : ∀ (z : ℝ), z ∈ {r : ℝ | ∃ (z : α) (H : z ∈ S), r = ∥x + y - z∥} → ∥x + y - (orthog_proj x + orthog_proj y)∥ ≤ z := begin
+        intros r k,
+        simp at k,
+        cases k with z k,
+        cases k,
+        rw [k_right],
+        sorry,
+        recover,
+        repeat {exact h},
+    end,
+    have w₄ := (@le_Inf {r | ∃ (z ∈ S), r = ∥x+y-z∥} (dist_nonempty _) (dist_bounded_below _) ∥x+y-(orthog_proj x + orthog_proj y)∥).2,
+    sorry,
+    use S,
+    exact h,
+    use S,
+    repeat {exact h},
+end
+.
+
+lemma orthog_proj_smul (c : ℝ) (x : α) : @orthog_proj α _ _ _ _ _ S h (c • x) = c • (@orthog_proj α _ _ _ _ _ S h x) :=
+begin
+    apply orthog_proj_suff',
+    have w := smul_mem S c (orthog_proj_mem x),
+    split,
     
+    exact w,
+    have w₁ : ∥c • x - c • orthog_proj x∥ ∈ {r : ℝ | ∃ (z ∈ S), r = ∥c • x - z∥} := begin
+        simp,
+        existsi (c•(orthog_proj x)),
+        split,
+
+        exact w,
+        rw [add_comm],
+    end,
+    have w₂ := Inf_le {r | ∃ (z ∈ S), r = ∥c•x-z∥} (@dist_bounded_below α _ _ _ _ _ S h (c•x)) w₁,
+    have w₃ : ∀ (z : ℝ), z ∈ {r : ℝ | ∃ (z : α) (H : z ∈ S), r = ∥c • x - z∥} → ∥c•x - c•orthog_proj x∥ ≤ z := sorry,
+    have w₄ := (le_Inf {r | ∃ (z ∈ S), r = ∥c•x-z∥} (dist_nonempty (c•x)) (dist_bounded_below _)).2,
+    sorry,
+    use c,
+    exact h,
+    exact h,
+    use S,
+    exact h,
+end
+.
+
+def orthog_proj_linear : is_linear_map ℝ (@orthog_proj α _ _ _ _ _ S h) :=
+{add := orthog_proj_add, smul := orthog_proj_smul}
+
+lemma perp_of_orthog_proj_zero (x : α) : @orthog_proj α _ _ _ _ _ S h x = 0 → x ∈ perp S.carrier :=
+begin
+    intros w,
+    dsimp [perp, orthog],
+    intros y k,
+    have w₁ := orthog_proj_dist x,
+    rw [w] at w₁,
+    simp at w₁,
+    have w₂ : ∥x∥ ≤ ∥x-y∥ := begin
+        have w₂ : ∥x-y∥ ∈ {r : ℝ | ∃ (z : α) (H : z ∈ S), r = ∥x - z∥} := begin
+            simp,
+            use y,
+            exact ⟨k, rfl⟩,
+        end,
+        have w₃ := Inf_le {r | ∃ (z ∈ S), r = ∥x-z∥} (@dist_bounded_below α _ _ _ _ _ S h x) w₂,
+        simp at *,
+        rw [←w₁] at w₃,
+        exact w₃,
+    end,
+    rw [←norm_sqr_leq_iff_norm_leq] at w₂,
+    simp at w₂,
+    rw [←neg_one_smul ℝ, mul_in_snd_coord] at w₂,
+    simp at w₂,
+    sorry,
+    exact norm_nonneg _,
 end
 
--- lemma orthog_proj_smul (c : ℝ) (x : α) : @orthog_proj α _ _ _ _ _ S h (c • x) = c • (@orthog_proj α _ _ _ _ _ S h x) :=
+theorem ker_orthog_img : (linear_map.ker (is_linear_map.mk' orthog_proj (@orthog_proj_linear α _ _ _ _ _ S h))).carrier = @perp α _ _ _ _ (linear_map.range ((is_linear_map.mk' orthog_proj (@orthog_proj_linear α _ _ _ _ _ S h)))).carrier :=
+begin
+    ext,
+    rw [←sub_simp, mem_ker],
+    split,
+
+    intros k,
+    dsimp [perp],
+    intros y w,
+    rw [←sub_simp] at w,
+    simp at w,
+    cases w with z w,
+    simp at k,
+    have w₁ := perp_of_orthog_proj_zero x k,
+    have w₂ := orthog_proj_mem z,
+    rw [w] at w₂,
+    dsimp [perp] at w₁,
+    exact w₁ y w₂,
+
+    dsimp [perp],
+    intros w,
+    apply orthog_proj_zero_on_perp_S,
+    dsimp [perp],
+    intros y k,
+    have w₁ := @orthog_proj_id_on_S α _ _ _ _ _ S h y k,
+    have w₂ := w y,
+    clear w,
+    rw [←sub_simp] at w₂,
+    simp at w₂,
+    exact w₂ y w₁,
+end
+
+lemma orthog_proj_idempotent (x : α) : @orthog_proj α _ _ _ _ _ S h (@orthog_proj α _ _ _ _ _ S h x) = @orthog_proj α _ _ _ _ _ S h x :=
+begin
+    have w := @orthog_proj_mem α _ _ _ _ _ S h x,
+    exact orthog_proj_id_on_S (orthog_proj x) w,
+end
+
+lemma orthog_of_orthog_proj_sub (x : α) : @orthog_proj α _ _ _ _ _ S h x ⊥ (x - @orthog_proj α _ _ _ _ _ S h x) :=
+begin
+    dsimp [orthog],
+    by_contradiction w,
+    simp at w,
+    sorry, 
+end
+
+lemma orthog_proj_is_symmetric (x y : α) : (@orthog_proj α _ _ _ _ _ S h x) † y = x † (@orthog_proj α _ _ _ _ _ S h y) :=
+begin
+    sorry,
+end
+
+lemma orthog_proj_norm_leq (x : α) : ∥@orthog_proj α _ _ _ _ _ S h x∥ ≤ ∥x∥ :=
+begin
+    have w := pythagoras (orthog_of_orthog_proj_sub x),
+    have w₁ : x - orthog_proj x = x + -orthog_proj x := rfl,
+    rw [w₁] at w,
+    ring at w,
+end
+
+
+-- lemma orthog_proj_has_bound : ∃ M > 0, ∀ x : α, ∥@orthog_proj α _ _ _ _ _ S h x ∥ ≤ M * ∥ x ∥ :=
 -- begin
---     apply orthog_proj_suff',
---     have w := smul_mem S c (orthog_proj_el x),
---     split,
-    
---     exact w,
---     have w₁ : ∥c • x - c • orthog_proj x∥ ∈ {r : ℝ | ∃ (z ∈ S), r = ∥c • x - z∥} := begin
---         simp,
---         existsi (c•(orthog_proj x)),
---         split,
-
---         exact w,
---         rw [add_comm],
---     end,
---     have w₂ := Inf_le {r | ∃ (z ∈ S), r = ∥c•x-z∥} (@dist_bounded_below α _ _ _ _ _ S h (c•x)) w₁,
---     sorry,
+--     use 1,
+--     use zero_lt_one,
+--     intros x,
+--     rw [one_mul, ←norm_leq_of_norm_sq_leq, sqr_norm, sqr_norm],
+--     dsimp [ip_self],
+--     rw [orthog_proj_is_symmetric, orthog_proj_idempotent],
 -- end
--- .
-
--- def orthog_proj_linear : is_linear_map ℝ (@orthog_proj α _ _ _ _ _ S _ _ sub h) :=
--- {add := @orthog_proj_add α _ _ _ _ _ S _ _ sub h, smul := @orthog_proj_smul α _ _ _ _ _ S _ _ sub h}
 
 end orthogonal_projection
