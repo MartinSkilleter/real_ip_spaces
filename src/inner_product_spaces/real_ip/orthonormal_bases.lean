@@ -15,6 +15,7 @@ section norm_known
 def α_normed_space : normed_space ℝ α := ip_space_is_normed_space
 
 local attribute [instance] α_normed_space
+local attribute [instance] classical.prop_decidable
 
 def orthog_set (L : set α) : Prop :=
 ∀ (a b ∈ L), a ≠ b → a ⊥ b
@@ -89,6 +90,14 @@ begin
     refl,
 end
 
+lemma norm_one_of_norm_inv (x : α) : x ≠ 0 → ∥(1/∥x∥)•x∥ = 1 :=
+begin
+    intros h,
+    rw [one_div_eq_inv, @norm_smul ℝ α _ (ip_space_is_normed_space) _ x, norm_inv,
+    @norm_norm α (ip_space_is_normed_group), inv_mul_cancel],
+    exact (@norm_neq_zero_iff_neq_zero α (ip_space_is_normed_space) x).2 h,
+end
+
 lemma norm_one_of_normalised (L : set α) (h : (0 : α) ∉ L) : ∀ (a ∈ (normalise L)), ∥a∥=1 :=
 begin
     intros a w,
@@ -102,9 +111,8 @@ begin
         rw [a_1] at k₁,
         contradiction,
     end,
-    rw [←k₂, ip_norm_smul, norm_inv, norm_norm],
-    simp,
-    exact (inv_mul_cancel ((norm_neq_zero_iff_neq_zero b).2 k₃)),
+    rw [←k₂, ←one_div_eq_inv],
+    exact norm_one_of_norm_inv b k₃,
 end
 
 lemma zero_not_elem_of_normalised (L : set α) : (0 : α) ∉ L → (0 : α) ∉ normalise L :=
@@ -251,14 +259,6 @@ begin
     exact h_right,
 end
 
-def gram_partial (s : ℕ → α) : ℕ → set α
-| 0 := {∥s 0∥⁻¹ • s 0}
-| n := sorry
-
--- set_option trace.class_instances true
--- def gram_schmidt (s : ℕ → α) : ℕ → α :=
--- ⋃₀ {L | ∃ (n : ℕ), L = gram_partial s n} 
-
 end norm_known
 
 section perp_space
@@ -312,77 +312,12 @@ begin
     exact k,
 end
 
-instance perp_has_add : has_add (perp S) := 
-⟨λ x y, ⟨x.val + y.val, @perp_add_closed _ _ _ _ _ S _ _ x.property y.property⟩⟩
-
-lemma perp_add_assoc (x y z : perp S) : (x + y) + z = x + (y + z) :=
-begin
-    dsimp [(+)],
-    simp only [subtype.mk_eq_mk],
-    exact (add_assoc _ _ _),
-end
-
 lemma zero_in_perp : (0 : α) ∈ perp S :=
 begin
     dsimp [perp],
     intros y h,
     exact right_orthog_to_zero y,
 end
-
-instance perp_has_zero : has_zero (perp S) :=
-begin
-    constructor,
-    use (0 : α),
-    exact zero_in_perp,
-end
-
-lemma perp_zero_add (x : perp S) : 0 + x = x :=
-begin
-    dsimp [(+)],
-    have h : add_semigroup.add ((0 : perp S).val) (x.val) = x.val := by exact zero_add x.val,
-    simp [h],
-end
-
-lemma perp_add_comm (x y : perp S) : x + y = y + x :=
-begin
-    dsimp [(+)],
-    have h : add_semigroup.add x.val y.val = add_semigroup.add y.val x.val := by exact add_comm x.val y.val,
-    simp [h],
-end
-
-lemma perp_add_zero (x : perp S) : x + 0 = x:=
-by {rw [perp_add_comm], exact perp_zero_add x}
-
-lemma neg_in_perp (x : α) : x ∈ perp S → -x ∈ perp S :=
-begin
-    intros h,
-    dsimp [perp] at *,
-    intros y w,
-    rw [←@neg_one_smul ℝ α _, ←one_smul ℝ y],
-    exact mul_orthog (h y w),
-end
-
-instance perp_has_neg : has_neg (perp S) :=
-begin
-    constructor,
-    intros x,
-    use (-(x : α)),
-    have h : (x : α) ∈ perp S := by simp,
-    exact neg_in_perp (x : α) h,
-end
-
-lemma perp_add_left_neg (x : perp S) : -x + x = 0 :=
-begin
-    dsimp [(+), has_neg.neg],
-    have h : add_semigroup.add (add_group.neg ↑x) (x.val) = 0 := by exact add_left_neg _,
-    simp [h],
-    refl,
-end
-
-instance perp_add_comm_group : add_comm_group (perp S) :=
-{add := (+), add_assoc := perp_add_assoc, zero := 0, zero_add := perp_zero_add,
- add_zero := perp_add_zero, neg := has_neg.neg, add_left_neg := perp_add_left_neg,
- add_comm := perp_add_comm}
 
 def perp_subspace : subspace ℝ α :=
 {carrier := perp S, zero := zero_in_perp, add := perp_add_closed, smul := perp_smul_closed}
@@ -413,33 +348,26 @@ begin
     exact h,
 end
 
-lemma ip_map_ker_is_preimage_zero (x : α) : (linear_map.ker (ip_map x)).carrier = (ip_map x)⁻¹' {0} :=
+lemma functional_ker_is_preimage_zero {f : α →ₗ[ℝ] ℝ} : (linear_map.ker f).carrier = f⁻¹' {0} :=
 begin
     ext,
-    rw [←perp_singleton_ker],
-    dsimp [preimage, perp] at *,
-    split,
-
-    intros h,
-    have k := h x (mem_singleton x),
-    dsimp [orthog] at k,
-    rw [conj_symm, k],
-    exact mem_singleton 0,
-
-    intros h y k,
-    have w := eq_of_mem_singleton k,
-    have w₁ := eq_of_mem_singleton h,
-    dsimp [orthog],
-    rw [w, conj_symm],
-    exact w₁,
+    rw [←sub_simp],
+    simp,
 end
 
-lemma ip_map_ker_is_closed (x : α) : @is_closed α (α_topological_space) (linear_map.ker (ip_map x)).carrier :=
+lemma bounded_functional_ker_closed {f : α →ₗ[ℝ] ℝ} {w : @is_bounded_linear_map ℝ _ α (ip_space_is_normed_space) _ _ f} : @is_closed α (α_topological_space) (linear_map.ker f).carrier :=
 begin
-    rw [ip_map_ker_is_preimage_zero],
-    apply ((@continuous_iff_is_closed α ℝ (α_topological_space) (ℝ_topological_space) (ip_map x)).1 (ip_map_is_continuous x) {0}),
+    rw [@functional_ker_is_preimage_zero α _ _ _ _],
+    have w₁ := @is_bounded_linear_map.continuous ℝ _ α (ip_space_is_normed_space) ℝ _ _ w,
+    apply ((@continuous_iff_is_closed α ℝ (α_topological_space) (ℝ_topological_space) f).1 w₁ {0}),
     exact is_closed_singleton,
 end
+
+lemma ip_map_ker_is_preimage_zero (x : α) : (linear_map.ker (ip_map x)).carrier = (ip_map x)⁻¹' {0} :=
+functional_ker_is_preimage_zero
+
+lemma ip_map_ker_is_closed (x : α) : @is_closed α (α_topological_space) (linear_map.ker (ip_map x)).carrier :=
+@bounded_functional_ker_closed α _ _ _ _ _ (ip_map_is_bounded_linear_map x)
 
 lemma perp_singleton_closed (x : α) : @is_closed α (α_topological_space) (perp {x}) :=
 begin
@@ -468,6 +396,30 @@ begin
     dsimp [perp] at h₁,
     exact h₁ y (mem_singleton y),
 end
+
+lemma perp_int_trivial {l : (0 : α) ∈ S}: S ∩ perp S = {0} :=
+begin
+    ext,
+    split,
+
+    simp,
+    intros h w,
+    dsimp [perp] at w,
+    have k := w x h,
+    have k₁ := zero_of_ip_self_zero x,
+    dsimp [ip_self] at k₁,
+    dsimp [orthog] at k,
+    exact k₁ k,
+
+    intros h,
+    have k := eq_of_mem_singleton h,
+    rw [k],
+    simp,
+    split,
+    exact l,
+    exact zero_in_perp,
+end
+
 
 lemma perp_singleton_expr (S : set α) {t : set α}: t ∈ {L : set α | ∃ (a : α) (H : a ∈ S), L = perp {a}} → ∃ (a ∈ S), t = perp {a} :=
 begin
@@ -607,7 +559,6 @@ begin
     recover,
     repeat {exact h},
 end
-.
 
 lemma orthog_proj_zero_on_perp_S : ∀ (x ∈ perp S.carrier), @orthog_proj α _ _ _ _ _ S h x = 0 :=
 begin
@@ -786,12 +737,40 @@ begin
     exact orthog_proj_id_on_S (orthog_proj x) w,
 end
 
-lemma orthog_of_orthog_proj_sub (x : α) : @orthog_proj α _ _ _ _ _ S h x ⊥ (x - @orthog_proj α _ _ _ _ _ S h x) :=
+lemma orthog_of_orthog_proj_sub (x : α) : (x - @orthog_proj α _ _ _ _ _ S h x) ∈ perp S.carrier:=
 begin
+    dsimp [perp],
+    intros y w,
+    -- have w₁ : ∥x-@orthog_proj α _ _  _ _ _ S h x∥ ≤ ∥x - (@orthog_proj α _ _ _ _ _ S h x + y)∥ := begin
+    --     have w₁ := @orthog_proj_dist α _ _ _ _ _ S h x,
+    --     rw [w₁],
+    --     have w₂ : ∥x - (@orthog_proj α _ _ _ _ _ S h x + y)∥ ∈ {r : ℝ | ∃ (z : α) (H : z ∈ S), r = ∥x - z∥} := begin
+    --         simp,
+    --         use @orthog_proj α _ _ _ _ _ S h x + y,
+    --         split,
+    --         exact add_mem S (@orthog_proj_mem α _ _ _ _ _ S h x) w,
+    --         simp,
+    --     end,
+    --     have w₃ := Inf_le {r : ℝ | ∃ (z : α) (H : z ∈ S), r = ∥x - z∥} (@dist_bounded_below α _ _ _ _ _ S h x) w₂,
+    --     exact w₃,
+    -- end,
+    -- w₁ : ∥x - orthog_proj x∥ ≤ ∥x - (orthog_proj x + y)∥
     dsimp [orthog],
-    by_contradiction w,
-    simp at w,
-    sorry, 
+    by_cases (y=0),
+
+    revert h,
+    intros k,
+    rw [k],
+    exact left_orthog_to_zero _,
+
+    revert h,
+    intros k,
+    rw [←ne.def, ←norm_neq_zero_iff_neq_zero] at k,
+    have k₁ : ∥x-(@orthog_proj α _ _ _ _ _ S h x + ((y † (x - @orthog_proj α _ _ _ _ _ S h x))/∥y∥^2) • y)∥^2 = ∥x-@orthog_proj α _ _ _ _ _ S h x∥^2 - (((x - @orthog_proj α _ _ _ _ _ S h x) † y)/∥y∥^2)^2 := begin
+        simp,
+        sorry,
+    end,
+    sorry,
 end
 
 lemma orthog_proj_is_symmetric (x y : α) : (@orthog_proj α _ _ _ _ _ S h x) † y = x † (@orthog_proj α _ _ _ _ _ S h y) :=
@@ -799,14 +778,15 @@ begin
     sorry,
 end
 
-lemma orthog_proj_norm_leq (x : α) : ∥@orthog_proj α _ _ _ _ _ S h x∥ ≤ ∥x∥ :=
-begin
-    have w := pythagoras (orthog_of_orthog_proj_sub x),
-    have w₁ : x - orthog_proj x = x + -orthog_proj x := rfl,
-    rw [w₁] at w,
-    ring at w,
-end
-
+-- lemma orthog_proj_norm_leq (x : α) : ∥@orthog_proj α _ _ _ _ _ S h x∥ ≤ ∥x∥ :=
+-- begin
+--     have w := pythagoras (@orthog_of_orthog_proj_sub α _ _ _ _ _ S h x),
+--     have w₁ : x - orthog_proj x = x + -orthog_proj x := rfl,
+--     rw [w₁, ←add_assoc, add_comm _ x, add_assoc, add_right_neg, add_zero] at w,
+--     have w₂ := @leq_of_add_nonneg _ _ _ (sqr_nonneg _) (sqr_nonneg _) (sqr_nonneg _) w,
+--     rw [←@norm_sqr_leq_iff_norm_leq _ _ _ _ (norm_nonneg _)],
+--     exact w₂,
+-- end
 
 -- lemma orthog_proj_has_bound : ∃ M > 0, ∀ x : α, ∥@orthog_proj α _ _ _ _ _ S h x ∥ ≤ M * ∥ x ∥ :=
 -- begin
@@ -818,4 +798,145 @@ end
 --     rw [orthog_proj_is_symmetric, orthog_proj_idempotent],
 -- end
 
+theorem orthog_direct_sum_exists (x : α) : ∃ (u ∈ S), ∃ (v ∈ perp S.carrier), x = u + v :=
+begin
+    use @orthog_proj α _ _ _ _ _ S h x,
+    use @orthog_proj_mem α _ _ _ _ _ S h x,
+    use (x-@orthog_proj α _ _ _ _ _ S h x),
+    use @orthog_of_orthog_proj_sub α _ _ _ _ _ S h x,
+    simp,
+end
+
+theorem orthog_direct_sum_unique (x u₁ u₂ v₁ v₂ : α) (U₁ : u₁ ∈ S) (U₂ : u₂ ∈ S) (V₁ : v₁ ∈ perp S.carrier) (V₂ : v₂ ∈ perp S.carrier) : 
+x = u₁ + v₁ → x = u₂ + v₂ → (u₁ = u₂ ∧ v₁ = v₂) :=
+begin
+    intros k₁ k₂,
+    rw [k₁] at k₂,
+    have k₃ : u₁ - u₂ = v₂ - v₁ := begin
+        sorry,
+    end,
+    have w₁ := sub_mem S U₁ U₂,
+    have w₂ := @sub_mem ℝ α _ _ _ (@perp_subspace α _ _ _ _ S.carrier) v₂ v₁ V₂ V₁,
+    have w₃ : u₁ - u₂ ∈ S.carrier ∩ perp S.carrier := begin
+        split,
+        exact w₁,
+        rw [k₃],
+        exact w₂,
+    end,
+    rw [@perp_int_trivial α _ _ _ _ S.carrier (zero_mem S)] at w₃,
+    have w₄ := sub_eq_zero.1 (eq_of_mem_singleton w₃),
+    rw [k₃] at w₃,
+    have w₅ := sub_eq_zero.1 (eq_of_mem_singleton w₃),
+    exact ⟨w₄, w₅.symm⟩,
+end
+
 end orthogonal_projection
+
+section riesz_representation
+
+def is_riesz_rep (f : α →ₗ[ℝ] ℝ) (x : α) := f.to_fun = ip_map x
+
+variables {f : α →ₗ[ℝ] ℝ}
+
+lemma fun_coe : ⇑f = f.to_fun := rfl
+
+lemma perp_trivial_of_subspace_all : (∀ (x : α), x ∈ S) → (∀ (y : α), y ∈ perp S.carrier → y = 0) :=
+begin
+    intros k₁ y k₂,
+    dsimp [perp] at k₂,
+    have k₃ := k₂ y (k₁ y),
+    exact zero_of_orthog_self k₃,
+end
+
+lemma perp_nonempty_of_subspace_not_all : (∃ (x : α), x ∉ S) → (∃ (y : α), y ≠ 0 ∧ y ∈ perp S.carrier) :=
+begin
+    rw [awesome_mt],
+    simp,
+    intros k,
+    intros x,
+    have k₁ := @orthog_direct_sum_exists α _ _ _ _ _ S h x,
+    rcases k₁ with ⟨u, ⟨U, ⟨v, ⟨V, k₁⟩⟩⟩⟩,
+    rw [k₁],
+    have k₂ := k v,
+    rw [awesome_mt] at k₂,
+    simp at k₂,
+    have k₃ := k₂ V,
+    rw [k₃, add_zero],
+    exact U,
+end
+
+lemma perp_nonempty_of_subspace_not_all' : (∃ (x : α), x ∉ S) → (∃ (y : α), ∥y∥=1 ∧ y ∈ perp S.carrier) :=
+begin
+    intros k,
+    have k₁ := @perp_nonempty_of_subspace_not_all α _ _ _ _ _ S h k,
+    rcases k₁ with ⟨z, ⟨k₁, k₂⟩⟩,
+    use ((1/∥z∥)•z),
+    split,
+
+    exact norm_one_of_norm_inv z k₁,
+
+    exact smul_mem (perp_subspace) (1/∥z∥) k₂,
+end
+
+theorem riesz_rep_exists : @is_bounded_linear_map ℝ _ α (ip_space_is_normed_space) _ _ f → (∃ (x : α), is_riesz_rep f x) :=
+begin
+    intros w,
+    have w₁ := @bounded_functional_ker_closed α _ _ _ _ f w,
+    have w₂ := @orthog_direct_sum_exists α _ _ _ _ _ (linear_map.ker f) w₁,
+    by_cases (∀ (x : α), x ∈ linear_map.ker f),
+
+    use 0,
+    dsimp [is_riesz_rep],
+    ext,
+    simp,
+    have w₃ := w₂ x,
+    clear w₂,
+    cases w₃ with u w₃,
+    cases w₃ with w₃ w₄,
+    cases w₄ with v w₄,
+    cases w₄ with w₄ w₅,
+    rw [w₅, linear_map.add],
+    simp at w₃,
+    rw [fun_coe] at w₃,
+    simp [w₃],
+    have w₆ := @perp_trivial_of_subspace_all α _ _ _ _ _ _ w₁ h v w₄,
+    rw [w₆],
+    exact linear_map.map_zero f,
+
+    revert h,
+    intros k,
+    rw [not_forall] at k,
+    have k₁ := @perp_nonempty_of_subspace_not_all' α _ _ _ _ _ _ w₁ k,
+    rcases k₁ with ⟨z, ⟨k₁, k₂⟩⟩,
+    use ((f z) • z),
+    dsimp [is_riesz_rep],
+    ext,
+    have k₃ : (f x) • z - (f z) • x ∈ linear_map.ker f := begin
+        simp,
+        ring,
+    end,
+    dsimp [perp] at k₂,
+    rw [←mul_one (f.to_fun x), ←mul_one ((f.to_fun x)*1), mul_assoc, ←pow_two, ←k₁, sqr_norm],
+    dsimp [ip_self],
+    rw [←mul_in_fst_coord, ←add_zero (f.to_fun x • z), ←add_left_neg (f.to_fun z • x), ←add_assoc,
+    add_in_fst_coord],
+    have k₄ := k₂ _ k₃,
+    dsimp [orthog] at k₄,
+    rw [conj_symm, fun_coe] at k₄,
+    rw [k₄, zero_add, fun_coe, mul_in_fst_coord, conj_symm, ←mul_in_fst_coord],
+end
+
+theorem riesz_rep_unique {x y : α} : is_riesz_rep f x → is_riesz_rep f y → x = y :=
+begin
+    intros h w,
+    dsimp [is_riesz_rep] at *,
+    have k := @ip_all_unique α _,
+    apply k,
+    intros z,
+    rw [h] at w,
+    have k₁ := @congr_arg _ _ z z (λ z, inner_product x z) rfl,
+    conv at k₁ {to_rhs, rw [w]},
+    exact k₁,
+end
+
+end riesz_representation

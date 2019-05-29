@@ -1,4 +1,4 @@
-import tactic.interactive
+import tactic.basic
 
 /-
 It's time to learn about universes!
@@ -26,6 +26,20 @@ instance category_of_types_broken : category Type :=
 
 -- Question 0: Explain why the definition above wasn't useful, perhaps
 -- mentioning Russell's paradox.
+
+/- Answer: Because of the hierarchy of the universes, Type cannot be of type Type. 
+Instead, it must be of Type 1 (otherwise, we would have an analogue of Russell's Paradox:
+the set of all sets being an element of itself). In a dependent type theory context,
+this means that nothing can be of Type itself, which is implemented by setting Type to be of
+Type 1, Type 1 of Type 2 etc. This is not reflected in the definition,
+as the universe level of the category above is fixed. It should instead be polymorphic, so
+that elements belonging to higher universe levels can be made into categories.
+
+One possible solution to this would be to change Type to Type 1 (at the very least, this would
+allow the category of types to be defined. However, we would then have an identical problem to
+the one above when we tried to create a category for a type in a universe level higher
+than 1).
+-/
 
 -- Here's one attempt:
 
@@ -124,8 +138,8 @@ structure Functor (C : Type u₁) [pcategory.{v₁ u₁} C] (D : Type u₂) [pca
 def List : Functor Type Type :=
 { obj := λ α, list α,
   map := λ α β : Type, λ f : pcategory.hom α β, λ L, list.map f L,
-  id_map := by {intros X, dsimp [pcategory.id], ext, induction x, simp, dsimp [list.map], rw [x_ih]},
-  map_comp := by {intros X Y Z f g, simp, ext, dsimp [pcategory.comp], induction x,
+  id_map := by {intros X, dsimp [pcategory.id], funext, induction x, simp, dsimp [list.map], rw [x_ih]},
+  map_comp := by {intros X Y Z f g, simp, funext, dsimp [pcategory.comp], induction x,
                   simp, dsimp [list.map], rw [x_ih],}}
 
 -- Question 5:
@@ -151,7 +165,25 @@ def comp
 {app := λ X : C, pcategory.comp (α.app X) (β.app X), 
  naturality := by {intros X Y f, rw [←pcategory.assoc, α.naturality, pcategory.assoc, pcategory.assoc],
  apply congr_arg, rw [β.naturality]}}
- 
+
+@[extensionality] lemma Natural_ext
+{C : Type u₁} [pcategory.{v₁ u₁} C] {D : Type u₂} [pcategory.{v₂ u₂} D] 
+{F G : Functor C D} {N M : NaturalTransformation F G} :
+(Π X : C, N.app X = M.app X) → N = M :=
+begin
+  intros h,
+  induction N,
+  induction M,
+  simp at h,
+  simp [h],
+  funext,
+  exact h x,
+end
+
+@[simp] lemma id_app
+{C : Type u₁} [pcategory.{v₁ u₁} C] {D : Type u₂} [pcategory.{v₂ u₂} D] {F : Functor C D} :
+(id F).app = λ X : C, pcategory.id (F.obj X) := rfl
+
 -- Hint: you may find `conv` helpful.
 end NaturalTransformation
 
@@ -160,10 +192,59 @@ end NaturalTransformation
 -- Hint: you may like to prove an extensionality lemma for natural transformations,
 -- and appropriate simp lemmas.
 instance {C : Type u₁} [pcategory.{v₁ u₁} C] {D : Type u₂} [pcategory.{v₂ u₂} D] :
-  pcategory.{p q} (Functor C D) :=
-{ hom := λ F G, NaturalTransformation F G }
+  pcategory.{(max u₁ v₂) (max u₁ u₂ v₁ v₂)} (Functor C D) :=
+{ hom := λ F G, NaturalTransformation F G ,
+  id := NaturalTransformation.id, 
+  comp := λ F G H, NaturalTransformation.comp,
+  comp_id := by {intros F G N, ext X, dsimp [NaturalTransformation.comp], rw [pcategory.comp_id]},
+  id_comp := by {intros F G N, ext X, dsimp [NaturalTransformation.comp], rw [pcategory.id_comp]},
+  assoc := by {intros F G H I N M O, ext X, dsimp [NaturalTransformation.comp], rw [pcategory.assoc]}
+}
+
+constant C : Type u₁
+constant D : Type u₂
+variables [C_cat : pcategory.{v₁ u₁} C] [D_cat : pcategory.{v₂ u₂} D]
+variables F G : @Functor C C_cat D D_cat
+constant N : NaturalTransformation F G
+
+set_option pp.universes true
+#check @Functor C C_cat D D_cat -- Type (max u₁ u₂ v₁ v₂)
+#check @NaturalTransformation C C_cat D D_cat F G -- Type (max u₁ v₂)
 
 -- Question 6:
 -- What universe does `NaturalTransformation F G` live in? Why?
 -- Hint: a really good answer will use the word 'impredicativity' somewhere
 -- along the way.
+
+/- Answer: NaturalTransformation F G lives in the universe 'max (u₁ v₂)'. 
+  We begin by noting that Functor C D is of type Type max (u₁ u₂ v₁ v₂).
+  This is because the field obj has type Type (max u₁ u₂) (because C : Type u₁
+  and D : Type u₂ and so) and the field map has type Type (max v₁ v₂) (because 
+  the morphisms in the category of C live in the universe v₁,  and the morphisms 
+  in the category of D live in the universe v₂). 
+  
+  The other fields are of type Prop = Sort 0 : Type 0, because they are functions from some type
+  into Prop. Impredicativity means that regardless of the universe level
+  of the domain, the type of this will always be Type 0. We want this feature
+  in our universe levels in Lean because we can interpret a function f : A → B for some
+  types A : Type u and B : Prop by the statement "given some element of A, I can give you an
+  element of B". In the case where B : Prop, an element of B is a proof of B and so f : A → Prop
+  represents the statement "if A has an element then B", so f is itself a proposition (and hence
+  of type Prop), even if this is a lower universe level than A.
+  
+  All of these facts together mean that Functor C D is of type
+  Type max (max u₁ u₂) (max v₁ v₂) = Type max (u₁ u₂ v₁ v₂). 
+  [Note : I realised after I had written this that the universe level of Functor does not affect 
+   the universe level of NaturalTransformation. However, the explanation about impredicativity above 
+   is still used below when we discuss why the field naturality of NaturalTransformation does not 
+   affect its universe level, so I left it in.]
+
+  We can now apply the same reasoning as above to determine the universe level of 
+  NaturalTransformation. Because naturality is a Prop, it will not affect the universe level of 
+  NaturalTransformation (once again by impredicativity), so it suffices to determine the universe 
+  level of app. pcategory.hom (F.obj X) (G.obj X) is a morphism in the category D and so is of type 
+  Type v₂. Because X : C, app is a function from something of type Type u₁ to something of type 
+  Type v₂ and so its type is Type (max u₁ v₂) (meaning it lives in the universe level max (u₁ v₂)).
+  Then NaturalTransformation has the same universe level as app and so lives in the universe level
+  max (u₁ v₂).
+-/

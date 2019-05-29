@@ -109,7 +109,7 @@ begin
     exact (right_orthog_to_zero 0),
 end
 
-lemma zero_of_self_ip_zero (x : α) : ip_self x = 0 → x = 0 :=
+lemma zero_of_ip_self_zero (x : α) : ip_self x = 0 → x = 0 :=
 begin
     rw awesome_mt,
     intros h,
@@ -120,7 +120,7 @@ lemma zero_iff_ip_self_zero (x : α) : ip_self x=0 ↔ x=0 :=
 begin
     split,
 
-    exact zero_of_self_ip_zero x,
+    exact zero_of_ip_self_zero x,
 
     intros h,
     rw [h],

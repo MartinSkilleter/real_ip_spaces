@@ -78,6 +78,14 @@ begin
     exact w,
 end
 
+lemma zero_of_orthog_self {x : α} : x ⊥ x → x = 0 :=
+begin
+    dsimp [orthog],
+    have k₁ := zero_iff_ip_self_zero x,
+    dsimp [ip_self] at k₁,
+    exact k₁.1,
+end
+
 lemma add_orthog {x y z : α} : x⊥z → y⊥z → (x+y)⊥z :=
 by {intros hx hy, dsimp [orthog] at *, rw [add_in_fst_coord, hx, hy, add_zero]}
 
@@ -103,7 +111,6 @@ begin
     rw [h,←w],
     simp only [zero_add],
 end
-.
 
 lemma orthog_of_pythagoras {x y : α} : ∥x+y∥^2 = ∥x∥^2 + ∥y∥^2 → x ⊥ y :=
 begin
@@ -217,7 +224,6 @@ def ip_space_is_metric_space : metric_space α :=
 {dist_self := ip_dist_self, eq_of_dist_eq_zero := ip_eq_of_dist_eq_zero, 
 dist_comm := ip_dist_comm, dist_triangle := ip_dist_triangle}
 
--- not an instance for now, causes trouble
 def ip_space_is_normed_group : normed_group α :=
 {dist_eq := ip_dist_eq,
 ..ip_space_is_metric_space}
@@ -277,3 +283,13 @@ begin
     rw [sqrt_sqr (norm_nonneg _), sqrt_sqr k] at w,
     exact w.symm,
 end
+
+lemma four_ne_zero : (4 : ℝ) ≠ 0 :=
+ne.symm (ne_of_lt four_pos)
+
+lemma leq_of_add_nonneg {a b c : ℝ} {ha : a ≥ 0} {hb : b ≥ 0} {hc : c ≥ 0} : a = b + c → b ≤ a :=
+begin
+    intros h,
+    linarith,
+end
+
