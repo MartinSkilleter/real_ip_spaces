@@ -834,13 +834,18 @@ end orthogonal_projection
 
 section riesz_representation
 
+local attribute [instance] classical.prop_decidable
+
 def is_riesz_rep (f : α →ₗ[ℝ] ℝ) (x : α) := f.to_fun = ip_map x
 
 variables {f : α →ₗ[ℝ] ℝ}
 
 lemma fun_coe : ⇑f = f.to_fun := rfl
 
-lemma perp_trivial_of_subspace_all : (∀ (x : α), x ∈ S) → (∀ (y : α), y ∈ perp S.carrier → y = 0) :=
+variables [Hilbert_space α]
+variables {S : @submodule ℝ α _ _ _}
+
+lemma perp_trivial_of_subspace_all {h : @is_closed α (α_topological_space) S.carrier} : (∀ (x : α), x ∈ S) → (∀ (y : α), y ∈ perp S.carrier → y = 0) :=
 begin
     intros k₁ y k₂,
     dsimp [perp] at k₂,
@@ -848,7 +853,7 @@ begin
     exact zero_of_orthog_self k₃,
 end
 
-lemma perp_nonempty_of_subspace_not_all : (∃ (x : α), x ∉ S) → (∃ (y : α), y ≠ 0 ∧ y ∈ perp S.carrier) :=
+lemma perp_nonempty_of_subspace_not_all {h : @is_closed α (α_topological_space) S.carrier} : (∃ (x : α), x ∉ S) → (∃ (y : α), y ≠ 0 ∧ y ∈ perp S.carrier) :=
 begin
     rw [awesome_mt],
     simp,
@@ -865,7 +870,7 @@ begin
     exact U,
 end
 
-lemma perp_nonempty_of_subspace_not_all' : (∃ (x : α), x ∉ S) → (∃ (y : α), ∥y∥=1 ∧ y ∈ perp S.carrier) :=
+lemma perp_nonempty_of_subspace_not_all' {h : @is_closed α (α_topological_space) S.carrier} : (∃ (x : α), x ∉ S) → (∃ (y : α), ∥y∥=1 ∧ y ∈ perp S.carrier) :=
 begin
     intros k,
     have k₁ := @perp_nonempty_of_subspace_not_all α _ _ _ _ _ S h k,
