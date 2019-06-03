@@ -183,6 +183,28 @@ begin
     exact (mul_self_nonneg r),
 end
 
+lemma sqr_pos_iff_neq_zero (r : ℝ) : r^2 > 0 ↔ r ≠ 0 :=
+begin
+    split,
+
+    rw [awesome_mt],
+    simp,
+    intros k,
+    rw [k, pow_two, mul_zero],
+
+    rw [awesome_mt],
+    simp,
+    intros k,
+    rw [le_iff_eq_or_lt] at k,
+    cases k,
+    exact pow_eq_zero k,
+
+    have l := sqr_nonneg r,
+    dsimp [(≥)] at l,
+    rw [←not_lt] at l,
+    exact absurd k l,
+end
+
 theorem triangle_ineq (x y : α) : ∥x+y∥≤∥x∥+∥y∥ :=
 begin
     have w : ∥x+y∥^2≤(∥x∥+∥y∥)^2 → ∥x+y∥≤∥x∥+∥y∥ := begin

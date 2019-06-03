@@ -100,14 +100,6 @@ end
 
 lemma par_add_in_fst_coord {x y z : β} : (x+y)†z = x†z + y†z :=
 begin
-    have w := par_law (x+z) y,
-    have k := par_law (x-z) y,
-    have l := congr_arg2 (λ {a c : ℝ}, a - c) w k,
-    simp at l,
-    dsimp [(†)],
-    rw [←left_distrib],
-    apply congr_arg (λ (x : ℝ), 1/4 * x),
-    ring at *,
     sorry,
 end
 
@@ -175,8 +167,13 @@ begin
     let h := r.pos,
     
     rw [←qh] at h,
-    sorry,
+    have w := @par_smul_nat _ _ _ _ ((r : ℝ) • x) z q,
+    have w₁ : ↑(r.denom) * ↑(rat.mk (r.num) ↑(r.denom)) = ↑r.num := sorry,
+    conv at w {to_lhs, rw [rat.num_denom r, qh, ←mul_smul, w₁]},
+
 end
+
+#print div_eq_mul_inv
 
 lemma par_smul_real {x z : β} : ∀ (r : ℝ), (r • x) † z = r * (x † z) :=
 begin

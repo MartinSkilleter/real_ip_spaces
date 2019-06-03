@@ -1,19 +1,21 @@
-import inner_product_spaces.real_ip.basic
+import inner_product_spaces.real_ip.ip_normed_space
+import tactic.interactive
+import tactic.basic
 
 -- Ask Scott how to fix this
 set_option class.instance_max_depth 100
 
 noncomputable theory
 
-open complex
+open complex linear_map
+
+section cartesian_prod
 
 variables {α : Type*} {β : Type*}
 variables [decidable_eq α] [add_comm_group α] [vector_space ℝ α] [ℝ_inner_product_space α]
 variables [decidable_eq β] [add_comm_group β] [vector_space ℝ β] [ℝ_inner_product_space β]
 
 instance prod_vector_space : vector_space ℝ (α×β) := by apply_instance
-
-section cartesian_prod
 
 def prod_inner_product (x y : α×β) : ℝ := x.1†y.1 + x.2†y.2
 
@@ -85,9 +87,95 @@ lemma ℝ_pos_def (x : ℝ) : x ≠ 0 → x†x > 0 :=
 by {exact mul_self_pos}
 
 instance ℝ_is_ℝ_inner_product_space : ℝ_inner_product_space ℝ :=
-begin
-    refine {conj_symm := ℝ_conj_symm, linearity := ℝ_linearity, pos_def := ℝ_pos_def}
-end
+{conj_symm := ℝ_conj_symm, linearity := ℝ_linearity, pos_def := ℝ_pos_def}
 
 end real_ip
+
+open function
+
+section inj_linear_map
+
+variables {γ : Type*} [decidable_eq γ] [add_comm_group γ] [vector_space ℝ γ] [ℝ_inner_product_space γ]
+variables {η : Type*} [decidable_eq η] [add_comm_group η] [vector_space ℝ η]
+variables (f : linear_map ℝ η γ) (h : injective f.to_fun)
+
+lemma fun_coe (f : linear_map ℝ η γ) : ⇑f = f.to_fun := rfl
+
+include f h
+
+instance inj_has_inner_product : has_ℝ_inner_product η := ⟨λ x y, f.to_fun x † f.to_fun y⟩
+
+lemma inj_conj_symm : ∀ (x y : η), (f.to_fun x) † (f.to_fun y) = (f.to_fun y) † (f.to_fun x) :=
+by {intros x y, exact conj_symm (f.to_fun x) (f.to_fun y)}
+
+lemma inj_linearity : ∀ (x y z : η) (a : ℝ), (f.to_fun (a • x + y))†(f.to_fun z) = a * ((f.to_fun x)†(f.to_fun z)) + (f.to_fun y)†(f.to_fun z) :=
+begin
+    intros x y z a,
+    rw [add, smul],
+    exact linearity (f.to_fun x) (f.to_fun y) (f.to_fun z) a,
+end
+
+lemma trivial_ker_of_injective : ∀ (x : η), f.to_fun x = 0 → x = 0 :=
+begin
+    intros x k,
+    have w := map_zero f,
+    dsimp [injective] at h,
+    rw [←w, fun_coe f] at k,
+    exact (h k),
+end
+
+lemma inj_pos_def : ∀ (x : η), x ≠ 0 → (f.to_fun x)†(f.to_fun x) > 0 :=
+begin
+    intros x,
+    rw [awesome_mt],
+    simp,
+    have w := ip_self_nonneg (f.to_fun x),
+    have k₁ := zero_iff_ip_self_zero (f.to_fun x),
+    dsimp [ip_self] at *,
+    intros k,
+    have w₁ := antisymm w k,
+    have w₂ := k₁.1 w₁,
+    exact (trivial_ker_of_injective f h x w₂),
+end
+
+instance inj_inner_product_space (f : linear_map ℝ η γ) (h : injective f.to_fun) : ℝ_inner_product_space η :=
+begin
+    refine_struct {..},
+
+    use λ x y, f.to_fun x † f.to_fun y,
+
+    exact inj_conj_symm f h,
+
+    exact inj_linearity f h,
+
+    exact inj_pos_def f h,
+end
+
+end inj_linear_map
+
+section subspace
+
+variables {γ : Type*} [decidable_eq γ] [add_comm_group γ] [vector_space ℝ γ] [ℝ_inner_product_space γ]
+variables {η : subspace ℝ γ}
+
+def realise : linear_map ℝ η γ :=
+begin
+    refine_struct {..},
+    use λ x, x,
+    repeat {simp},
+end
+
+lemma realise_injective : @injective ↥η γ (realise.to_fun) :=
+begin
+    dsimp [injective, realise],
+    intros x₁ x₂ k,
+    exact set_coe.ext k,
+end
+
+instance sub_inner_product_space : ℝ_inner_product_space η :=
+@inj_inner_product_space γ _ _ _ _ η _ _ _ realise realise_injective
+
+end subspace
+
+
 
