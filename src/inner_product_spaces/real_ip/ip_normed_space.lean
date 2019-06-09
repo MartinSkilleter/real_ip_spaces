@@ -7,19 +7,16 @@ variables [decidable_eq α] [add_comm_group α] [vector_space ℝ α] [ℝ_inner
 
 open real
 
+lemma neg_sub_eq_sub_neg {α : Type*} [add_comm_group α] (a b : α) : a-b = -(b-a) := by simp
+
 local notation `sqrt` := real.sqrt
 
-instance ip_space_has_dist : has_dist α := ⟨λ x y, sqrt (ip_self (x-y))⟩
+@[reducible] instance ip_space_has_dist : has_dist α := ⟨λ x y, sqrt (ip_self (x-y))⟩
 
 lemma ip_dist_self : ∀ x : α, dist x x = 0 :=
-begin
-    intros x,
+by {intros x,
     dsimp [dist],
-    simp only [add_right_neg],
-    apply real.sqrt_eq_zero'.2,
-    dsimp [ip_self],
-    simp only [left_orthog_to_zero],
-end
+    rw [add_right_neg, ip_self_zero, sqrt_zero]}
 
 lemma ip_eq_of_dist_eq_zero : ∀ (x y : α), dist x y = 0 → x = y :=
 begin
@@ -30,45 +27,26 @@ begin
 end
 
 lemma ip_dist_comm : ∀ (x y : α), dist x y = dist y x :=
-begin
-    intros x y,
+by {intros x y,
     dsimp [dist],
-    rw [real.sqrt_inj (ip_self_nonneg (x+-y)) (ip_self_nonneg (y+-x))],
-    dsimp [ip_self],
-    have w := @linearity α _ _ _ _ (x+-y) 0 (x+-y) (-1),
-    simp [-add_in_snd_coord, -add_in_fst_coord] at w,
-    have k := @mul_in_snd_coord α _ _ _ _ (y+-x) (y+-x) (-1),
-    simp [-add_in_snd_coord, -add_in_fst_coord] at k,
-    rw [w] at k,
-    exact (neg_inj k),
-end
+    rw [real.sqrt_inj (ip_self_nonneg (x+-y)) (ip_self_nonneg (y+-x)), 
+    ←sub_eq_add_neg, neg_sub_eq_sub_neg, ip_self_neg_eq, sub_eq_add_neg]}
 
-instance ip_space_has_norm : has_norm α := ⟨λ x, sqrt ((ip_self x))⟩
+@[reducible] instance ip_space_has_norm : has_norm α := ⟨λ x, sqrt ((ip_self x))⟩
 
-@[simp] lemma sqr_norm {x : α} : ∥x∥^2 = (ip_self x) :=
-begin
-    dsimp [norm],
-    rw [real.sqr_sqrt (ip_self_nonneg x)],
-end
+@[simp] lemma sqr_norm {x : α} : ∥x∥^2 = (ip_self x) := real.sqr_sqrt (ip_self_nonneg x)
 
-lemma ip_norm_nonneg {x : α} : ∥x∥ ≥ 0 :=
-begin
-    dsimp [norm],
-    exact real.sqrt_nonneg (ip_self x),
-end
+lemma ip_norm_nonneg {x : α} : ∥x∥ ≥ 0 := real.sqrt_nonneg (ip_self x)
 
-def orthog (x y : α) := x†y = 0
+@[reducible] def orthog (x y : α) := x†y = 0
 
 infix `⊥` := orthog
 
 lemma orthog_symm {x y : α} : x ⊥ y → y ⊥ x :=
-begin
-    intros h,
-    dsimp [orthog] at h,
-    have w := (@conj_symm α _ _ _ _ x y).symm,
-    rw [h] at w,
-    exact w,
-end
+by {intros h,
+    dsimp [orthog] at *,
+    rw [←conj_symm x y],
+    exact h}
 
 lemma orthog_symm' {x y : α} : x ⊥ y → y†x = 0 :=
 begin
@@ -79,36 +57,26 @@ begin
 end
 
 lemma zero_of_orthog_self {x : α} : x ⊥ x → x = 0 :=
-begin
-    dsimp [orthog],
-    have k₁ := zero_iff_ip_self_zero x,
-    dsimp [ip_self] at k₁,
-    exact k₁.1,
-end
+(zero_iff_ip_self_zero x).1
 
 lemma add_orthog {x y z : α} : x⊥z → y⊥z → (x+y)⊥z :=
 by {intros hx hy, dsimp [orthog] at *, rw [add_in_fst_coord, hx, hy, add_zero]}
 
 @[simp] lemma mul_orthog {x y : α} {a b : ℝ} : x ⊥ y → (a•x) ⊥ (b•y) :=
-begin
-    intros h,
-    dsimp [orthog],
-    dsimp [orthog] at h,
-    simp,
+by {intros h,
+    simp [orthog],
     repeat {right},
-    exact h,
-end
+    exact h}
 
 lemma pythagoras {x y : α} : x ⊥ y → ∥x+y∥^2 = ∥x∥^2+∥y∥^2 :=
 begin
     intros h,
     dsimp [orthog] at h,
-    simp only [sqr_norm],
-    dsimp [ip_self],
+    squeeze_simp [sqr_norm, ip_self],
     simp,
     have w := @conj_symm α _ _ _ _ x y,
     rw [h] at w,
-    rw [h,←w],
+    rw [h, ←w],
     simp only [zero_add],
 end
 

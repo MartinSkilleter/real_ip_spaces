@@ -8,15 +8,7 @@ open real
 variables {α : Type*} {β : Type*}
 
 lemma awesome_mt {p q : Prop} [decidable p] [decidable q] : p → q ↔ (¬q → ¬p) :=
-begin
-    split,
-
-    exact mt,
-
-    have w := @mt ¬q ¬p,
-    rw [not_not, not_not] at w,
-    exact w,
-end
+by {constructor, exact mt, have w := @mt ¬q ¬p, rw [not_not, not_not] at w, exact w}
 
 class has_ℝ_inner_product (α : Type*) := (inner_product : α → α → ℝ)
 
@@ -47,45 +39,33 @@ lemma pos_def (x : α) : x ≠ 0 → inner_product x x > 0 :=
 by apply ℝ_inner_product_space.pos_def
 
 @[simp] lemma right_orthog_to_zero (x : α) : 0 † x = 0 :=
-begin
-    have h := linearity 0 0 x 1,
-    simp only [add_zero, one_mul, smul_zero] at h,
-    have w := @add_left_cancel ℝ _ (0†x) 0 (0†x),
-    simp only [add_zero] at w,
-    exact (w h).symm,
-end
+by {have h := linearity 0 0 x 1,
+    rw [add_zero, one_mul, smul_zero] at h,
+    conv at h {to_lhs, rw [←add_zero (0†x)]},
+    exact (add_left_cancel h).symm}
 
 @[simp] lemma left_orthog_to_zero (x : α) : x † 0 = 0 :=
-begin
-    have h := right_orthog_to_zero x,
-    rw conj_symm at h,
-    exact h,
-end
+by {rw [conj_symm],
+    exact right_orthog_to_zero x}
 
 lemma zero_of_orthog_to_all {y : α} : (∀ (x : α), x † y = 0) → y = 0 :=
-begin
-    intros h,
+by {intros h,
     have w := mt (pos_def y),
     simp [le_iff_lt_or_eq] at w,
-    exact (w (or.inr (h y))),
-end
+    exact (w (or.inr (h y)))}
 
 lemma zero_of_orthog_to_all' {y : α} : (∀ (x : α), y † x = 0) → y = 0 :=
 begin
     intros h,
     apply @zero_of_orthog_to_all α _ _ _,
     intros x,
-    have w := h x,
     rw [conj_symm],
-    exact w,
+    exact h x,
 end
 
 @[simp] lemma mul_in_fst_coord (x z : α) (a : ℝ) : (a•x)†z = a*(x†z) :=
-begin
-    have h := linearity x 0 z a,
-    simp only [right_orthog_to_zero, add_zero] at h,
-    exact h,
-end
+by {rw [←add_zero (a•x), ←add_zero (a*(x†z)), ←right_orthog_to_zero z],
+    exact linearity x 0 z a}
 
 lemma ip_all_unique (x y : α) : (∀ (z : α), x†z = y†z) → x = y :=
 begin
@@ -101,20 +81,14 @@ begin
     exact sub_eq_zero.1 k',
 end
 
-def ip_self : α → ℝ := λ x, x†x
+@[reducible] def ip_self : α → ℝ := λ x, x†x
 
-@[simp] lemma ip_self_zero : ip_self (0 : α) = 0 :=
-begin
-    dsimp [ip_self],
-    exact (right_orthog_to_zero 0),
-end
+@[simp] lemma ip_self_zero : ip_self (0 : α) = 0 := right_orthog_to_zero 0
 
 lemma zero_of_ip_self_zero (x : α) : ip_self x = 0 → x = 0 :=
-begin
-    rw awesome_mt,
+by {rw awesome_mt,
     intros h,
-    exact (ne_of_gt (pos_def x h)),
-end
+    exact (ne_of_gt (pos_def x h))}
 
 lemma zero_iff_ip_self_zero (x : α) : ip_self x=0 ↔ x=0 :=
 begin
@@ -140,7 +114,6 @@ end
 
 @[simp] lemma ip_self_nonneg (x : α) : ip_self x ≥ 0 :=
 begin
-    dsimp [ip_self, (≥)],
     apply le_iff_eq_or_lt.2,
     by_cases (x = 0),
 
@@ -149,8 +122,7 @@ begin
     simp,
 
     right,
-    have w := pos_def x h,
-    exact w,
+    exact pos_def x h,
 end
 
 @[simp] lemma add_in_snd_coord (x y z : α) : x†(y+z) = (x†y)+(x†z) :=
@@ -168,10 +140,7 @@ begin
 end
 
 @[simp] lemma ip_self_neg_eq (x : α) : ip_self (-x) = ip_self x :=
-begin
-    dsimp [ip_self],
-    rw [←@neg_one_smul ℝ α _ _ _ x],
-    simp only [mul_in_fst_coord, mul_in_snd_coord],
-    simp,
-end
+by {dsimp [ip_self],
+    rw [←@neg_one_smul ℝ α _ _ _ x, mul_in_fst_coord, mul_in_snd_coord, 
+        ←mul_assoc, ←neg_eq_neg_one_mul, neg_neg, one_mul]}
 
