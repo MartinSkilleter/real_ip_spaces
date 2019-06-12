@@ -1,13 +1,10 @@
 import inner_product_spaces.real_ip.ip_normed_space
-import tactic.interactive
-import tactic.basic
 
--- Ask Scott how to fix this
 set_option class.instance_max_depth 100
 
 noncomputable theory
 
-open complex linear_map
+open real linear_map
 
 section cartesian_prod
 
@@ -15,18 +12,14 @@ variables {α : Type*} {β : Type*}
 variables [decidable_eq α] [add_comm_group α] [vector_space ℝ α] [ℝ_inner_product_space α]
 variables [decidable_eq β] [add_comm_group β] [vector_space ℝ β] [ℝ_inner_product_space β]
 
-instance prod_vector_space : vector_space ℝ (α×β) := by apply_instance
+@[reducible] def prod_inner_product (x y : α×β) : ℝ := x.1†y.1 + x.2†y.2
 
-def prod_inner_product (x y : α×β) : ℝ := x.1†y.1 + x.2†y.2
-
-instance prod_has_inner_product : has_ℝ_inner_product (α×β) := ⟨prod_inner_product⟩
+@[reducible] instance prod_has_inner_product : has_ℝ_inner_product (α×β) := ⟨prod_inner_product⟩
 
 lemma prod_conj_symm : ∀ (x y : α × β), x†y = y†x :=
-begin
-    intros x y,
+by {intros x y,
     dsimp [(†), prod_inner_product],
-    rw [conj_symm x.fst, conj_symm x.snd],
-end
+    rw [conj_symm x.fst, conj_symm x.snd]}
 
 lemma prod_linearity (x y z : α × β) (a : ℝ) : (a • x + y) † z = a * (x † z) + y † z :=
 begin
@@ -38,16 +31,11 @@ end
 
 lemma comp_neq_zero_of_neq_zero (x : α × β) : x ≠ 0 → x.1 ≠ 0 ∨ x.2 ≠ 0 :=
 begin
-    intros h,
-    by_contradiction,
-    rw [not_or_distrib] at a,
-    simp only [not_not] at a,
-    cases a,
-    have w : x = (x.1, x.2) := by simp only [prod.mk.eta, eq_self_iff_true],
-    rw [a_left, a_right] at w,
-    have k : (0, 0) = (0 : α × β) := by refl,
-    rw [←w] at k,
-    contradiction,
+    rw [awesome_mt], 
+    simp [not_or_distrib],
+    intros a b,
+    rw [←@prod.mk.eta _ _ x, a, b],
+    refl,
 end
 
 lemma prod_pos_def : ∀ (x : α × β), x ≠ 0 → x†x > 0 :=
@@ -57,15 +45,9 @@ begin
     have w := comp_neq_zero_of_neq_zero _ h,
     cases w,
     
-    have k := pos_def _ w,
-    have k' := ip_self_nonneg x.2,
-    dsimp [ip_self] at k',
-    exact lt_add_of_pos_of_le k k',
+    exact lt_add_of_pos_of_le (pos_def _ w) (ip_self_nonneg x.2),
 
-    have k := pos_def _ w,
-    have k' := ip_self_nonneg x.1,
-    dsimp [ip_self] at k',
-    exact lt_add_of_le_of_pos k' k,
+    exact lt_add_of_le_of_pos (ip_self_nonneg x.1) (pos_def _ w),
 end
 
 instance prod_inner_product_space : ℝ_inner_product_space (α×β) :=
@@ -75,16 +57,14 @@ end cartesian_prod
 
 section real_ip
 
-instance ℝ_has_ℝ_inner_product : has_ℝ_inner_product ℝ := ⟨λ a b, a*b⟩
+@[reducible] instance ℝ_has_ℝ_inner_product : has_ℝ_inner_product ℝ := ⟨λ a b, a*b⟩
 
-lemma ℝ_conj_symm (x y : ℝ) : x†y=y†x :=
-by {dsimp [(†)], exact mul_comm x y}
+lemma ℝ_conj_symm (x y : ℝ) : x†y=y†x := mul_comm x y
 
 lemma ℝ_linearity (x y z : ℝ) (a : ℝ) : (a•x+y)†z = a*(x†z) + y†z :=
 by {dsimp [(†)], rw [right_distrib, mul_assoc]}
 
-lemma ℝ_pos_def (x : ℝ) : x ≠ 0 → x†x > 0 :=
-by {exact mul_self_pos}
+lemma ℝ_pos_def (x : ℝ) : x ≠ 0 → x†x > 0 := mul_self_pos
 
 instance ℝ_is_ℝ_inner_product_space : ℝ_inner_product_space ℝ :=
 {conj_symm := ℝ_conj_symm, linearity := ℝ_linearity, pos_def := ℝ_pos_def}
@@ -103,7 +83,7 @@ lemma fun_coe (f : linear_map ℝ η γ) : ⇑f = f.to_fun := rfl
 
 include f h
 
-instance inj_has_inner_product : has_ℝ_inner_product η := ⟨λ x y, f.to_fun x † f.to_fun y⟩
+@[reducible] instance inj_has_inner_product : has_ℝ_inner_product η := ⟨λ x y, f.to_fun x † f.to_fun y⟩
 
 lemma inj_conj_symm : ∀ (x y : η), (f.to_fun x) † (f.to_fun y) = (f.to_fun y) † (f.to_fun x) :=
 by {intros x y, exact conj_symm (f.to_fun x) (f.to_fun y)}

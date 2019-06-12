@@ -43,7 +43,7 @@ begin
 
     use 1,
     split,
-    linarith,
+    exact zero_lt_one,
     intros y,
     rw [h],
     simp,
@@ -59,7 +59,7 @@ begin
     rw [ne.def] at k,
     sorry,
     intros y,
-    simp,
+    exact cauchy_schwarz,
 end
 
 lemma ip_map_is_continuous (x : α) : @continuous α _ (α_topological_space) (ℝ_topological_space) (ip_map x) :=

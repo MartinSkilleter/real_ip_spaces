@@ -11,7 +11,7 @@ lemma neg_sub_eq_sub_neg {α : Type*} [add_comm_group α] (a b : α) : a-b = -(b
 
 local notation `sqrt` := real.sqrt
 
-@[reducible] instance ip_space_has_dist : has_dist α := ⟨λ x y, sqrt (ip_self (x-y))⟩
+instance ip_space_has_dist : has_dist α := ⟨λ x y, sqrt (ip_self (x-y))⟩
 
 lemma ip_dist_self : ∀ x : α, dist x x = 0 :=
 by {intros x,
@@ -32,7 +32,7 @@ by {intros x y,
     rw [real.sqrt_inj (ip_self_nonneg (x+-y)) (ip_self_nonneg (y+-x)), 
     ←sub_eq_add_neg, neg_sub_eq_sub_neg, ip_self_neg_eq, sub_eq_add_neg]}
 
-@[reducible] instance ip_space_has_norm : has_norm α := ⟨λ x, sqrt ((ip_self x))⟩
+instance ip_space_has_norm : has_norm α := ⟨λ x, sqrt ((ip_self x))⟩
 
 @[simp] lemma sqr_norm {x : α} : ∥x∥^2 = (ip_self x) := real.sqr_sqrt (ip_self_nonneg x)
 
@@ -72,36 +72,37 @@ lemma pythagoras {x y : α} : x ⊥ y → ∥x+y∥^2 = ∥x∥^2+∥y∥^2 :=
 begin
     intros h,
     dsimp [orthog] at h,
-    squeeze_simp [sqr_norm, ip_self],
+    simp only [sqr_norm, ip_self],
     simp,
     have w := @conj_symm α _ _ _ _ x y,
     rw [h] at w,
-    rw [h, ←w],
-    simp only [zero_add],
+    rw [h, ←w, zero_add, zero_add],
 end
 
 lemma orthog_of_pythagoras {x y : α} : ∥x+y∥^2 = ∥x∥^2 + ∥y∥^2 → x ⊥ y :=
 begin
     intros h,
-    simp at h,
+    rw [sqr_norm, sqr_norm, sqr_norm, ip_self_add, add_assoc] at h,
     conv at h {to_rhs, rw [←add_zero (ip_self y)]},
     have w := (add_left_inj _).mp h,
     have k := congr_arg (λ (r : ℝ), 1/2 * r) w,
-    have l : ¬((2 : ℝ) = 0) := two_ne_zero,
     simp at k,
-    repeat {cases k, exact absurd k l},
-    dsimp [orthog],
-    exact k,
+    rw [left_distrib, ←mul_assoc, inv_mul_cancel two_ne_zero, one_mul] at k,
+    conv at k {to_rhs, rw [←add_zero (2⁻¹ * ip_self y)]},
+    exact (add_left_inj _).mp k,
 end
+
+lemma pythagoras_iff_orthog {x y : α} : ∥x+y∥^2 = ∥x∥^2 + ∥y∥^2 ↔ x ⊥ y :=
+⟨orthog_of_pythagoras, pythagoras⟩
 
 instance : has_norm ℝ := ⟨abs⟩ 
 
-@[simp] theorem cauchy_schwarz {x y : α} : ∥x†y∥≤∥x∥*∥y∥ :=
+@[simp] theorem cauchy_schwarz (x y : α) : ∥x†y∥≤∥x∥*∥y∥ :=
 begin
     by_cases (y=0),
 
-    rw [h],
     dsimp [norm],
+    rw [h],
     simp,
 
     have k : ∥x†y∥^2≤∥x∥^2*∥y∥^2 → ∥x†y∥≤∥x∥*∥y∥ := begin
@@ -112,9 +113,8 @@ begin
         exact w₁,
     end,
     apply k,
-    clear k,
     let c := (x†y)/∥y∥^2,
-    have w : 0≤∥x-c•y∥^2 := by exact (pow_two_nonneg ∥x-c•y∥),
+    have w := pow_two_nonneg (∥x-c•y∥),
     rw [sqr_norm, sqr_norm] at *,
     dsimp [norm],
     rw [←sqrt_sqr_eq_abs, sqr_sqrt (pow_two_nonneg _)],
@@ -123,37 +123,32 @@ begin
     repeat {rw [←neg_one_smul ℝ (c•y)] at w},
     repeat {rw [mul_in_fst_coord] at w},
     repeat {rw [mul_in_snd_coord] at w},
-    rw [@conj_symm α _ _ _ _ y x] at w,
+    rw [conj_symm y x] at w,
     simp at w,
-    have k : c = (x†y)/∥y∥^2 := by refl,
-    rw [k] at w,
-    clear k,
-    have k := (@neq_zero_iff_ip_self_neq_zero α _ _ _ _ y).2 h,
+    have k₁ : c = (x†y)/∥y∥^2 := by refl,
+    rw [k₁] at w,
+    have k₂ := (@neq_zero_iff_ip_self_neq_zero α _ _ _ _ y).2 h,
     simp only [sqr_norm] at w,
-    have w₁ := div_mul_cancel (x†y) k,
+    have w₁ := div_mul_cancel (x†y) k₂,
     dsimp [ip_self] at *,
     rw [w₁] at w,
     simp at w,
     have w₂ := le_of_sub_nonneg w,
-    clear w₁ w,
     have w₃ : (x†y)/(y†y) = (x†y)*(y†y)⁻¹ := by refl,
     rw [mul_comm, w₃, ←mul_assoc, ←pow_two] at w₂,
     have w₄ := @ip_self_nonneg α _ _ _ _ y,
     dsimp [ip_self] at w₄,
     have w₅ := mul_le_mul_of_nonneg_right w₂ w₄,
-    rw [mul_assoc, inv_mul_cancel k, mul_one] at w₅,
+    rw [mul_assoc, inv_mul_cancel k₂, mul_one] at w₅,
     exact w₅,
 end
 
 lemma sqr_nonneg (r : ℝ) : r^2 ≥ 0 :=
-begin
-    rw [pow_two],
-    exact (mul_self_nonneg r),
-end
+by {rw [pow_two], exact mul_self_nonneg r}
 
 lemma sqr_pos_iff_neq_zero (r : ℝ) : r^2 > 0 ↔ r ≠ 0 :=
 begin
-    split,
+    constructor,
 
     rw [awesome_mt],
     simp,
@@ -179,27 +174,23 @@ begin
         intros h,
         rw [←sqrt_le (sqr_nonneg _) (sqr_nonneg _),
             sqrt_sqr (ip_norm_nonneg),
-            sqrt_sqr (add_nonneg ip_norm_nonneg ip_norm_nonneg)
-        ] at h,
+            sqrt_sqr (add_nonneg ip_norm_nonneg ip_norm_nonneg)] at h,
         exact h,
     end,
     apply w,
-    ring SOP,
-    rw [←pow_two],
-    repeat {rw [sqr_norm]},
-    rw [ip_self_add, add_assoc, add_assoc, add_le_add_iff_left (ip_self x),
-    add_le_add_iff_right, mul_assoc, mul_comm ∥y∥ 2, ←mul_assoc,
-    mul_comm ∥x∥ 2, mul_assoc,
-    @mul_le_mul_left _ _ (x†y) _ 2 (by linarith)],
-    have k' := @cauchy_schwarz α _ _ _ _ x y,
-    exact le_trans (le_max_left _ _) k',
+    rw [sqr_norm, pow_two, left_distrib, right_distrib, right_distrib, ←pow_two,
+    ←pow_two, sqr_norm, sqr_norm, ip_self_add, add_assoc, add_assoc, add_le_add_iff_left,
+    ←add_assoc, add_le_add_iff_right (ip_self y), mul_comm ∥y∥, ←mul_two, mul_comm],
+    apply mul_le_mul_of_nonneg_right,
+    apply le_trans (le_abs_self (x†y)),
+    exact cauchy_schwarz x y,
+
+    rw [le_iff_eq_or_lt],
+    right,
+    exact two_pos,
 end
 
-lemma ip_dist_eq : ∀ (x y : α), dist x y = norm (x - y) :=
-begin
-    intros x y,
-    refl,
-end
+lemma ip_dist_eq : ∀ (x y : α), dist x y = norm (x - y) := by {intros x y, refl}
 
 lemma ip_dist_triangle : ∀ (x y z : α), dist x z ≤ dist x y + dist y z :=
 begin
@@ -211,8 +202,10 @@ begin
 end
 
 def ip_space_is_metric_space : metric_space α :=
-{dist_self := ip_dist_self, eq_of_dist_eq_zero := ip_eq_of_dist_eq_zero, 
-dist_comm := ip_dist_comm, dist_triangle := ip_dist_triangle}
+{dist_self := ip_dist_self, 
+ eq_of_dist_eq_zero := ip_eq_of_dist_eq_zero, 
+ dist_comm := ip_dist_comm, 
+ dist_triangle := ip_dist_triangle}
 
 def ip_space_is_normed_group : normed_group α :=
 {dist_eq := ip_dist_eq,
@@ -230,35 +223,22 @@ begin
     rw [←h₁, ←real.sqrt_mul h₂],
     have h₃ := mul_nonneg h₂ (ip_self_nonneg x),
     rw [real.sqrt_inj (ip_self_nonneg (a•x)) h₃],
-    dsimp [ip_self],
-    simp only [mul_in_fst_coord, mul_in_snd_coord],
+    simp only [ip_self, mul_in_fst_coord, mul_in_snd_coord],
     rw [←mul_assoc, ←pow_two, sqr_abs],
 end
 
 def ip_space_is_normed_space : normed_space ℝ α :=
 {norm_smul := ip_norm_smul,
  .. ip_space_is_normed_group}
-.
 
 lemma norm_neq_zero_iff_neq_zero {β : Type*} [normed_space ℝ β] (x : β) : ∥x∥ ≠ (0 : ℝ) ↔ x ≠ (0 : β) :=
-begin
-    split,
-
-    apply mt,
-    exact (norm_eq_zero x).2,
-
-    apply mt,
-    exact (norm_eq_zero x).1,
-end
+⟨by {apply mt, exact (norm_eq_zero x).2}, by {apply mt, exact (norm_eq_zero x).1}⟩
 
 lemma norm_eq_iff_norm_sq_eq {β : Type*} [normed_space ℝ β] {x y : β} : ∥x∥=∥y∥ ↔ ∥x∥^2 = ∥y∥^2 :=
 begin
     split,
 
-    intros h,
-    have w := congr_arg (λ (r : ℝ), r^2) h,
-    simp at w,
-    exact w,
+    apply congr_arg (λ (r : ℝ), r^2),
 
     intros h,
     have w := congr_arg (λ (r : ℝ), sqrt r) h,
@@ -278,8 +258,5 @@ lemma four_ne_zero : (4 : ℝ) ≠ 0 :=
 ne.symm (ne_of_lt four_pos)
 
 lemma leq_of_add_nonneg {a b c : ℝ} {ha : a ≥ 0} {hb : b ≥ 0} {hc : c ≥ 0} : a = b + c → b ≤ a :=
-begin
-    intros h,
-    linarith,
-end
+by {intros h, linarith}
 

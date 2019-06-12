@@ -12,14 +12,9 @@ local attribute [instance] classical.prop_decidable
 
 theorem ip_parallelogram_law (x y : α) : ∥x+y∥^2+∥x-y∥^2=2*∥x∥^2+2*∥y∥^2 :=
 begin
+    repeat {rw [sqr_norm]},
     simp,
-    dsimp [ip_self],
-    have w : x†-y = -(x†y), begin
-        rw [←neg_one_smul ℝ y, mul_in_snd_coord],
-        ring,
-    end,
-    rw [w],
-    simp,
+    rw [←neg_one_smul ℝ y, mul_in_snd_coord],
     ring,
 end
 
@@ -32,7 +27,8 @@ variables [decidable_eq β] [normed_space ℝ β] [ℝ_parallelopotamus β]
 @[simp] lemma par_law (x y : β) : ∥x+y∥^2 + ∥x-y∥^2 = 2*∥x∥^2+2*∥y∥^2 :=
 by apply ℝ_parallelopotamus.parallelogram_law
 
-instance par_has_inner_product : has_ℝ_inner_product β := ⟨λ x y, 1/4*(∥x+y∥^2 - ∥x-y∥^2)⟩
+instance par_has_inner_product : has_ℝ_inner_product β :=
+⟨λ x y, 1/4*(∥x+y∥^2 - ∥x-y∥^2)⟩
 
 lemma nonneg_norm {a : ℝ} {h : a ≥ 0} : ∥a∥ = a :=
 begin
@@ -91,23 +87,23 @@ begin
     rw [neg_neg] at k,
     rw [k, one_mul],
 end
-.
 
 lemma par_add_law {x y z : β} : ∥x+y+z∥^2 = ∥x+y∥^2 + ∥x+z∥^2 + ∥y+z∥^2 - ∥x∥^2 - ∥y∥^2 - ∥z∥^2 :=
 begin
-    sorry,
+    sorry
 end
 
 lemma par_add_in_fst_coord {x y z : β} : (x+y)†z = x†z + y†z :=
 begin
-    sorry,
+    dsimp [(†)],
+    rw [par_add_law, par_add_law, ←left_distrib],
+    apply congr_arg (λ (r : ℝ), 1/4*r),
+    simp,
+    ring,
 end
 
 @[simp] lemma par_right_orthog_to_zero {x : β} : 0†x = 0 :=
-begin
-    dsimp [(†)],
-    simp,
-end
+by {dsimp [(†)], simp}
 
 @[simp] lemma par_left_orthog_to_zero {x : β} : x†0 = 0 :=
 by {rw [par_conj_symm], exact par_right_orthog_to_zero}
@@ -170,10 +166,8 @@ begin
     have w := @par_smul_nat _ _ _ _ ((r : ℝ) • x) z q,
     have w₁ : ↑(r.denom) * ↑(rat.mk (r.num) ↑(r.denom)) = ↑r.num := sorry,
     conv at w {to_lhs, rw [rat.num_denom r, qh, ←mul_smul, w₁]},
-
+    repeat {sorry},
 end
-
-#print div_eq_mul_inv
 
 lemma par_smul_real {x z : β} : ∀ (r : ℝ), (r • x) † z = r * (x † z) :=
 begin
@@ -188,5 +182,9 @@ end
 
 instance par_is_ip_space : ℝ_inner_product_space β :=
 {conj_symm := par_conj_symm, linearity := par_linearity, pos_def := par_pos_def}
+
+open rat
+
+lemma rat_mul_denom_eq_num (q : ℚ) (h : q.denom ≠ 0) : (rat.mk q.num q.denom)*q.denom = q.num := by sorry
 
 end

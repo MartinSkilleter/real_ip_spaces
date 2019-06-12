@@ -21,10 +21,7 @@ def orthog_set (L : set α) : Prop :=
 ∀ (a b ∈ L), a ≠ b → a ⊥ b
 
 lemma emptyset_orthog : orthog_set (∅ : set α) :=
-begin
-    dsimp [orthog_set],
-    simp,
-end
+by {dsimp [orthog_set], simp}
 
 lemma add_elt_to_orthog (L : set α) (x : α) (h : orthog_set L) (w : ∀ (y ∈ L), x ⊥ y) : orthog_set (L ∪ {x}) :=
 begin
@@ -201,18 +198,11 @@ begin
         have w₂ := k w₁,
         rw [mem_coe] at w₂,
         have w₃ := smul p (∥x∥) w₂,
-        simp [smul_smul] at w₃,
-        have w₄ := ((norm_neq_zero_iff_neq_zero x).2 h),
-        have w₅ := div_self w₄,
-        have w₆ : ∥x∥/∥x∥ = ∥x∥*(∥x∥)⁻¹ := begin
-            rw [←mul_one ∥x∥, mul_div_assoc ∥x∥ (1 : ℝ), one_div_eq_inv],
-            simp,
-            recover,
-            repeat {apply_instance},
-        end,
-        rw [←w₆, w₅, one_smul] at w₃,
+        rw [smul_smul, one_div_eq_inv, mul_inv_cancel, one_smul] at w₃,
         rw [mem_coe],
         exact w₃,
+        rw [←ne.def] at h,
+        exact (norm_neq_zero_iff_neq_zero x).2 h,
     end,
     exact w,
 end
@@ -221,7 +211,7 @@ lemma span_of_normalised_is_span (L : set α) : span ℝ (normalise L) = span �
 begin
     ext,
     rw [mem_span],
-    split,
+    constructor,
 
     intros h,
     exact (h (span ℝ L)) (normalised_subset_span L),
@@ -229,7 +219,6 @@ begin
     intros h p w,
     have h' := mem_span.1 h,
     have h₁ := h' p,
-    clear h',
     exact h₁ (in_submodule_of_normalised_in_submodule L p w),
 end
 
@@ -667,7 +656,6 @@ begin
         exact neg_lt_zero.2 a,
     end,
     rw [←w₂] at w₃,
-    clear a w₂,
     rw [←norm_sqr_leq_iff_norm_leq] at w₁,
     rw [lt_iff_not_ge] at w₃,
     exact absurd w₁ w₃,
@@ -810,7 +798,6 @@ begin
     intros y k,
     have w₁ := orthog_proj_id_on_S S h y k,
     have w₂ := w y,
-    clear w,
     rw [←sub_simp] at w₂,
     simp at w₂,
     exact w₂ y w₁,
@@ -914,7 +901,6 @@ begin
     ext,
     simp,
     have w₃ := w₂ x,
-    clear w₂,
     cases w₃ with u w₃,
     cases w₃ with w₃ w₄,
     cases w₄ with v w₄,
@@ -964,4 +950,46 @@ begin
 end
 
 end riesz_representation
+
+section adjoint
+
+variables (f : α →ₗ[ℝ] α) (h : @is_bounded_linear_map ℝ _ α ip_space_is_normed_space α ip_space_is_normed_space f)
+
+include f h
+
+lemma adjoint_map_bounded (y : α) : @is_bounded_linear_map ℝ _ α ip_space_is_normed_space _ _ (λ x, f x † y) :=
+begin
+    constructor,
+
+    constructor,
+    repeat {simp},
+
+    have h₁ := @is_bounded_linear_map.bound ℝ _ α ip_space_is_normed_space α ip_space_is_normed_space f h,
+    by_cases (y=0),
+
+    use 1,
+    use zero_lt_one,
+    intros x,
+    rw [h, left_orthog_to_zero, norm_zero, one_mul],
+    sorry,
+
+    rcases h₁ with ⟨M, H, h₁⟩,
+    use M*∥y∥,
+    have w₁ : M*∥y∥>0 := by sorry,
+    use w₁,
+    intros x,
+    have w₂ := cauchy_schwarz,
+end
+
+def adjoint_fun : α → α :=
+begin
+    intros x,
+
+    
+
+    have w := classical.some (riesz_rep_exists),
+end
+
+
+end adjoint
 
