@@ -309,13 +309,13 @@ begin
 end
 
 def perp_subspace : subspace ℝ α :=
-{carrier := perp S, zero := zero_in_perp, add := perp_add_closed, smul := perp_smul_closed}
+{carrier := perp S, 
+ zero := zero_in_perp, 
+ add := perp_add_closed, 
+ smul := perp_smul_closed}
 
 lemma sub_simp {α : Type*} [add_comm_group α] [vector_space ℝ α] {S : subspace ℝ α} {y : α} : y ∈ S ↔ y ∈ S.carrier :=
-begin
-    rw [←submodule.mem_coe],
-    unfold_coes,
-end
+by {rw [←submodule.mem_coe], unfold_coes}
 
 lemma perp_singleton_ker (x : α) : perp {x} = (linear_map.ker (ip_map x)).carrier :=
 begin
@@ -440,7 +440,7 @@ section orthogonal_projection
 local attribute [instance] α_normed_space
 
 variables [Hilbert_space α]
-variables (S : @submodule ℝ α _ _ _)
+variables (S : submodule ℝ α)
 variables (h : @is_closed α (α_topological_space) S.carrier)
 
 include h
@@ -840,8 +840,6 @@ section riesz_representation
 
 local attribute [instance] classical.prop_decidable
 
-def is_riesz_rep (f : α →ₗ[ℝ] ℝ) (x : α) := f.to_fun = ip_map x
-
 variables (f : α →ₗ[ℝ] ℝ)
 
 lemma fun_coe : ⇑f = f.to_fun := rfl
@@ -887,7 +885,7 @@ begin
     exact smul_mem (perp_subspace) (1/∥z∥) k₂,
 end
 
-theorem riesz_rep_exists : @is_bounded_linear_map ℝ _ α (ip_space_is_normed_space) _ _ f → (∃ (x : α), is_riesz_rep f x) :=
+theorem riesz_rep_exists : @is_bounded_linear_map ℝ _ α (ip_space_is_normed_space) _ _ f → (∃ (x : α), f.to_fun = ip_map x) :=
 begin
     intros w,
     have w₁ := @bounded_functional_ker_closed α _ _ _ _ f w,
@@ -897,7 +895,6 @@ begin
     revert h,
     intros k,
     use 0,
-    dsimp [is_riesz_rep],
     ext,
     simp,
     have w₃ := w₂ x,
@@ -919,7 +916,6 @@ begin
     have k₁ := perp_nonempty_of_subspace_not_all' (linear_map.ker f) w₁ k,
     rcases k₁ with ⟨z, ⟨k₁, k₂⟩⟩,
     use ((f z) • z),
-    dsimp [is_riesz_rep],
     ext,
     have k₃ : (f x) • z - (f z) • x ∈ linear_map.ker f := begin
         simp,
@@ -936,14 +932,14 @@ begin
     rw [k₄, zero_add, fun_coe, mul_in_fst_coord, conj_symm, ←mul_in_fst_coord],
 end
 
-theorem riesz_rep_unique {x y : α} : is_riesz_rep f x → is_riesz_rep f y → x = y :=
+theorem riesz_rep_unique {x y : α} : f.to_fun = ip_map x → f.to_fun = ip_map y → x = y :=
 begin
     intros h w,
-    dsimp [is_riesz_rep] at *,
     have k := @ip_all_unique α _,
     apply k,
     intros z,
-    rw [h] at w,
+    rw [h, fun_coe, fun_coe] at w,
+    dsimp [ip_map] at w,
     have k₁ := @congr_arg _ _ z z (λ z, inner_product x z) rfl,
     conv at k₁ {to_rhs, rw [w]},
     exact k₁,
@@ -953,11 +949,22 @@ end riesz_representation
 
 section adjoint
 
-variables (f : α →ₗ[ℝ] α) (h : @is_bounded_linear_map ℝ _ α ip_space_is_normed_space α ip_space_is_normed_space f)
+variables (f : α →ₗ[ℝ] α) 
+variables (h : @is_bounded_linear_map ℝ _ α ip_space_is_normed_space α ip_space_is_normed_space f)
+variables [Hilbert_space α]
 
 include f h
 
-lemma adjoint_map_bounded (y : α) : @is_bounded_linear_map ℝ _ α ip_space_is_normed_space _ _ (λ x, f x † y) :=
+def adjoint_map (y : α): α →ₗ[ℝ] ℝ :=
+begin
+    refine_struct {..},
+    use (λ x, (f x) † y),
+    repeat {simp},
+end
+
+lemma adjoint_map_fun (y : α) : (adjoint_map f h y).to_fun = λ x, (f.to_fun x) † y := rfl
+
+lemma adjoint_map_bounded (y : α) : @is_bounded_linear_map ℝ _ α ip_space_is_normed_space _ _ (adjoint_map f h y) :=
 begin
     constructor,
 
@@ -970,26 +977,148 @@ begin
     use 1,
     use zero_lt_one,
     intros x,
-    rw [h, left_orthog_to_zero, norm_zero, one_mul],
-    sorry,
+    have w₁ : (λ (x : α), f.to_fun x†0) x = f.to_fun x†0 := rfl,
+    rw [fun_coe, adjoint_map_fun, h, w₁, left_orthog_to_zero, norm_zero, one_mul],
+    apply norm_nonneg _,
 
     rcases h₁ with ⟨M, H, h₁⟩,
     use M*∥y∥,
-    have w₁ : M*∥y∥>0 := by sorry,
-    use w₁,
+    have w₁ : ∥y∥>0 := sorry,
+    use mul_pos H w₁,
     intros x,
-    have w₂ := cauchy_schwarz,
+    apply le_trans (cauchy_schwarz (f x) y),
+    rw [mul_assoc, mul_comm ∥y∥, ←mul_assoc],
+    apply (mul_le_mul_right w₁).2,
+    exact h₁ x,
 end
 
-def adjoint_fun : α → α :=
+def adjoint_to_fun : α → α :=
 begin
-    intros x,
-
-    
-
-    have w := classical.some (riesz_rep_exists),
+    intros y,
+    use classical.some (riesz_rep_exists (adjoint_map f h y) (adjoint_map_bounded f h y)),
 end
 
+lemma adjoint_ip_switch : ∀ (x y : α), (f x) † y = x † (adjoint_to_fun f h y) :=
+begin
+    intros x y,
+    have w := classical.some_spec (riesz_rep_exists (adjoint_map f h y) (adjoint_map_bounded f h y)),
+    have k := adjoint_map_fun f h y,
+    rw [w] at k,
+    simp at k,
+    dsimp [adjoint_to_fun],
+    have k' := @congr_arg _ _ x x (λ (x : α), f.to_fun x†y) rfl,
+    conv at k' {to_rhs, rw [←k, conj_symm]},
+    exact k',
+end
+
+lemma adjoint_ip_switch' : ∀ (x y : α), (adjoint_to_fun f h x)†y = x † (f y) :=
+begin
+    intros x y,
+    rw [conj_symm, ←adjoint_ip_switch, conj_symm],
+end
+
+lemma adjoint_to_fun_unique (S : α → α) : (∀ (x y : α), (f x) † y = x † (S y)) → S = adjoint_to_fun f h :=
+begin
+    intros w,
+    ext,
+    have k := adjoint_ip_switch f h,
+    apply @ip_all_unique α _ _ _ _ _ _,
+    intros z,
+    have w' := w z x,
+    have k' := k z x,
+    rw [w', conj_symm, conj_symm z] at k',
+    exact k',
+end
+
+lemma adjoint_to_fun_add (x y : α) : adjoint_to_fun f h (x+y) = adjoint_to_fun f h x + adjoint_to_fun f h y :=
+begin
+    apply @ip_all_unique α _ _ _ _ _ _,
+    intros z,
+    rw [add_in_fst_coord, adjoint_ip_switch', adjoint_ip_switch', adjoint_ip_switch', add_in_fst_coord],
+end
+
+lemma adjoint_to_fun_smul (c : ℝ) (x : α) : adjoint_to_fun f h (c • x) = c • adjoint_to_fun f h x :=
+begin
+    apply @ip_all_unique α _ _ _ _ _ _,
+    intros z,
+    rw [adjoint_ip_switch', mul_in_fst_coord, mul_in_fst_coord, adjoint_ip_switch'],
+end
+
+def adjoint : α →ₗ[ℝ] α :=
+{to_fun := adjoint_to_fun f h, add := adjoint_to_fun_add f h, smul := adjoint_to_fun_smul f h}
+
+local attribute [instance] α_normed_space
+
+lemma adjoint_fun : (adjoint f h).to_fun = adjoint_to_fun f h := rfl
+
+lemma adjoint_bounded : @is_bounded_linear_map ℝ _ α ip_space_is_normed_space α ip_space_is_normed_space (adjoint f h):=
+begin
+    constructor,
+    constructor,
+    exact adjoint_to_fun_add f h,
+    exact adjoint_to_fun_smul f h,
+
+    have w := h.bound,
+    rcases w with ⟨M, H, w⟩,
+    use M,
+    use H,
+
+    have k : ∀ (x y : α), ∥(adjoint_to_fun f h x)†y∥≤M*∥x∥*∥y∥ := begin
+        intros x y,
+        rw [adjoint_ip_switch'],
+        apply le_trans (cauchy_schwarz x _),
+        have k := w y,
+        by_cases (x=0),
+
+        revert h,
+        intros l,
+        rw [l, norm_zero, zero_mul, mul_zero, zero_mul],
+
+        revert h,
+        intros l,
+        rw [←ne.def] at l,
+        rw [mul_comm, mul_assoc, mul_comm ∥x∥, ←mul_assoc],
+        apply (mul_le_mul_right ((norm_pos_iff x).2 l)).2,
+        exact k,
+    end,
+    intros x,
+    by_cases (∥(adjoint f h).to_fun x∥ = 0),
+    have k₁ : 0 ≤ M * ∥x∥ := mul_nonneg (le_of_lt H) (norm_nonneg x),
+    rw [←h] at k₁,
+    exact k₁,
+
+    revert h,
+    intros l,
+    rw [←ne.def] at l,
+    have k₁ := k x (adjoint_to_fun f h x),
+    have k₂ := @sqr_norm α _ _ _ _ (adjoint_to_fun f h x),
+    dsimp [ip_self] at k₂,
+    rw [←k₂, norm_sqr_eq_sqr, pow_two] at k₁,
+    have k₄ := mul_le_mul_right_le _ _ (∥(adjoint_to_fun f h x)∥⁻¹) (inv_nonneg.mpr (norm_nonneg _)) k₁,
+    rw [mul_assoc, mul_inv_cancel, mul_one, mul_assoc, mul_inv_cancel, mul_one] at k₄,
+    exact k₄,
+    rw [adjoint_fun] at l,
+    repeat {exact l},
+end
+.
+
+lemma adjoint_unique (S : α →ₗ[ℝ] α) : (∀ (x y : α), (f x) † y = x † (S y)) → S = adjoint f h :=
+begin
+    intros k,
+    ext,
+    have k₁ := adjoint_to_fun_unique f h _ k,
+    simp only [] at k₁,
+    rw [k₁, ←adjoint_fun],
+    refl,
+end
+
+lemma adjoint_is_involution : adjoint (adjoint f h) (adjoint_bounded f h) = f :=
+begin
+    apply eq.symm,
+    apply adjoint_unique _ _,
+    intros x y,
+    exact adjoint_ip_switch' f h x y,
+end
 
 end adjoint
 

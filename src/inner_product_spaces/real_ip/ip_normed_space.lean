@@ -146,6 +146,8 @@ end
 lemma sqr_nonneg (r : ℝ) : r^2 ≥ 0 :=
 by {rw [pow_two], exact mul_self_nonneg r}
 
+lemma norm_sqr_eq_sqr (r : ℝ) : ∥r^2∥ = r^2 := abs_of_nonneg (sqr_nonneg r)
+
 lemma sqr_pos_iff_neq_zero (r : ℝ) : r^2 > 0 ↔ r ≠ 0 :=
 begin
     constructor,
@@ -166,6 +168,26 @@ begin
     dsimp [(≥)] at l,
     rw [←not_lt] at l,
     exact absurd k l,
+end
+
+lemma mul_le_mul_right_le (a b c : ℝ) : c ≥ 0 → a ≤ b → a*c ≤ b*c :=
+begin
+    intros k w,
+    by_cases (c=0),
+
+    rw [h, mul_zero, mul_zero],
+
+    have k' : c > 0 := begin
+        dsimp [(≥)] at k,
+        rw [le_iff_eq_or_lt] at k,
+        cases k,
+
+        exact absurd k.symm h,
+
+        exact k,
+    end,
+
+    exact (mul_le_mul_right k').2 w,
 end
 
 theorem triangle_ineq (x y : α) : ∥x+y∥≤∥x∥+∥y∥ :=
