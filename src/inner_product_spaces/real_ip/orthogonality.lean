@@ -248,6 +248,16 @@ begin
     exact h_right,
 end
 
+-- The Gram-Schimdt Procedure. Never finished defining it because I ended up
+-- doing most of my work without fixing a basis.
+
+-- def gram_partial (s : ℕ → α) : ℕ → set α
+-- | 0 := {∥s 0∥⁻¹ • s 0}
+-- | n := sorry
+
+-- def gram_schmidt (s : ℕ → α) : ℕ → α :=
+-- ⋃₀ {L | ∃ (n : ℕ), L = gram_partial s n}
+
 end norm_known
 
 section perp_space
@@ -1100,7 +1110,6 @@ begin
     rw [adjoint_fun] at l,
     repeat {exact l},
 end
-.
 
 lemma adjoint_unique (S : α →ₗ[ℝ] α) : (∀ (x y : α), (f x) † y = x † (S y)) → S = adjoint f h :=
 begin
@@ -1121,4 +1130,6 @@ begin
 end
 
 end adjoint
+
+
 

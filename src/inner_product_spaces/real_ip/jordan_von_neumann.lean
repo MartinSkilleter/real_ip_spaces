@@ -183,8 +183,4 @@ end
 instance par_is_ip_space : ℝ_inner_product_space β :=
 {conj_symm := par_conj_symm, linearity := par_linearity, pos_def := par_pos_def}
 
-open rat
-
-lemma rat_mul_denom_eq_num (q : ℚ) (h : q.denom ≠ 0) : (rat.mk q.num q.denom)*q.denom = q.num := by sorry
-
 end
