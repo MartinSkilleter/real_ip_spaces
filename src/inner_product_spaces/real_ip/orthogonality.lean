@@ -215,7 +215,7 @@ begin
 
     intros h,
     exact (h (span ℝ L)) (normalised_subset_span L),
-    
+
     intros h p w,
     have h' := mem_span.1 h,
     have h₁ := h' p,
@@ -231,11 +231,11 @@ begin
     cases h,
     have w := zero_not_mem_of_linear_independent (@zero_ne_one ℝ _) h_left,
     split,
-    
+
     dsimp [orthonormal],
     split,
     exact orthog_normalised_of_orthog L k,
-    
+
     exact norm_one_of_normalised L w,
 
     split,
@@ -319,9 +319,9 @@ begin
 end
 
 def perp_subspace : subspace ℝ α :=
-{carrier := perp S, 
- zero := zero_in_perp, 
- add := perp_add_closed, 
+{carrier := perp S,
+ zero := zero_in_perp,
+ add := perp_add_closed,
  smul := perp_smul_closed}
 
 lemma sub_simp {α : Type*} [add_comm_group α] [vector_space ℝ α] {S : subspace ℝ α} {y : α} : y ∈ S ↔ y ∈ S.carrier :=
@@ -510,7 +510,7 @@ begin
     exact norm_nonneg _,
 end
 
-lemma dist_nonempty (x : α) : (∃ (r : ℝ), r ∈ {r : ℝ | ∃ (z : α) (H : z ∈ S), r = ∥x - z∥}) := 
+lemma dist_nonempty (x : α) : (∃ (r : ℝ), r ∈ {r : ℝ | ∃ (z : α) (H : z ∈ S), r = ∥x - z∥}) :=
 begin
     use ∥x∥,
     simp,
@@ -563,7 +563,7 @@ begin
     intros x k,
     apply orthog_proj_suff',
     split,
-    
+
     exact zero_mem S,
     rw [sub_zero],
     have w₁ : ∥x∥ ∈ {r : ℝ | ∃ (z : α) (H : z ∈ S), r = ∥x - z∥} := begin
@@ -616,7 +616,7 @@ begin
     dsimp [perp, orthog] at *,
     intros y k₁,
     by_cases (y=0),
-    
+
     rw [h],
     exact left_orthog_to_zero x,
 
@@ -702,7 +702,7 @@ begin
     simp,
 end
 
-theorem orthog_direct_sum_unique (x u₁ u₂ v₁ v₂ : α) (U₁ : u₁ ∈ S) (U₂ : u₂ ∈ S) (V₁ : v₁ ∈ perp S.carrier) (V₂ : v₂ ∈ perp S.carrier) : 
+theorem orthog_direct_sum_unique (x u₁ u₂ v₁ v₂ : α) (U₁ : u₁ ∈ S) (U₂ : u₂ ∈ S) (V₁ : v₁ ∈ perp S.carrier) (V₂ : v₂ ∈ perp S.carrier) :
 x = u₁ + v₁ → x = u₂ + v₂ → (u₁ = u₂ ∧ v₁ = v₂) :=
 begin
     intros k₁ k₂,
@@ -836,7 +836,7 @@ end
 lemma orthog_proj_is_bounded_linear_map : is_bounded_linear_map ℝ (orthog_proj S h) :=
 begin
     constructor,
-    
+
     constructor,
     exact orthog_proj_add S h,
     exact orthog_proj_smul S h,
@@ -895,6 +895,8 @@ begin
     exact smul_mem (perp_subspace) (1/∥z∥) k₂,
 end
 
+-- Scott: I haven't read much of this file yet, but this jumps out:
+-- Why do you only prove the existential statement here, instead of actually providing the vector?
 theorem riesz_rep_exists : @is_bounded_linear_map ℝ _ α (ip_space_is_normed_space) _ _ f → (∃ (x : α), f.to_fun = ip_map x) :=
 begin
     intros w,
@@ -959,7 +961,7 @@ end riesz_representation
 
 section adjoint
 
-variables (f : α →ₗ[ℝ] α) 
+variables (f : α →ₗ[ℝ] α)
 variables (h : @is_bounded_linear_map ℝ _ α ip_space_is_normed_space α ip_space_is_normed_space f)
 variables [Hilbert_space α]
 

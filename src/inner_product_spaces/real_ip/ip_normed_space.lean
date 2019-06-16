@@ -7,17 +7,22 @@ variables [decidable_eq α] [add_comm_group α] [vector_space ℝ α] [ℝ_inner
 
 open real
 
+-- Scott: reverse LHS and RHS, and rename `neg_sub`. Oh, and look at that:
+#check neg_sub
 lemma neg_sub_eq_sub_neg {α : Type*} [add_comm_group α] (a b : α) : a-b = -(b-a) := by simp
 
+-- Scott: I don't this line has any effect:
 local notation `sqrt` := real.sqrt
 
 instance ip_space_has_dist : has_dist α := ⟨λ x y, sqrt (ip_self (x-y))⟩
 
+-- Scott: convert intros to named argument, here and throughout
 lemma ip_dist_self : ∀ x : α, dist x x = 0 :=
 by {intros x,
     dsimp [dist],
     rw [add_right_neg, ip_self_zero, sqrt_zero]}
 
+-- Scott: rename `eq_of_dist_zero`?
 lemma ip_eq_of_dist_eq_zero : ∀ (x y : α), dist x y = 0 → x = y :=
 begin
     intros x y h,
@@ -29,7 +34,7 @@ end
 lemma ip_dist_comm : ∀ (x y : α), dist x y = dist y x :=
 by {intros x y,
     dsimp [dist],
-    rw [real.sqrt_inj (ip_self_nonneg (x+-y)) (ip_self_nonneg (y+-x)), 
+    rw [real.sqrt_inj (ip_self_nonneg (x+-y)) (ip_self_nonneg (y+-x)),
     ←sub_eq_add_neg, neg_sub_eq_sub_neg, ip_self_neg_eq, sub_eq_add_neg]}
 
 instance ip_space_has_norm : has_norm α := ⟨λ x, sqrt ((ip_self x))⟩
@@ -38,8 +43,11 @@ instance ip_space_has_norm : has_norm α := ⟨λ x, sqrt ((ip_self x))⟩
 
 lemma ip_norm_nonneg {x : α} : ∥x∥ ≥ 0 := real.sqrt_nonneg (ip_self x)
 
+-- Scott: should this really be reducible? It seems a useful predicate.
 @[reducible] def orthog (x y : α) := x†y = 0
 
+-- Scott: I think this is going to have to be a local notation, because they use
+-- it for the bottom element of a lattice.
 infix `⊥` := orthog
 
 lemma orthog_symm {x y : α} : x ⊥ y → y ⊥ x :=
@@ -48,6 +56,7 @@ by {intros h,
     rw [←conj_symm x y],
     exact h}
 
+-- Scott: can we get rid of this one?
 lemma orthog_symm' {x y : α} : x ⊥ y → y†x = 0 :=
 begin
     intros h,
@@ -62,6 +71,7 @@ lemma zero_of_orthog_self {x : α} : x ⊥ x → x = 0 :=
 lemma add_orthog {x y z : α} : x⊥z → y⊥z → (x+y)⊥z :=
 by {intros hx hy, dsimp [orthog] at *, rw [add_in_fst_coord, hx, hy, add_zero]}
 
+-- Scott: this isn't a simp lemma
 @[simp] lemma mul_orthog {x y : α} {a b : ℝ} : x ⊥ y → (a•x) ⊥ (b•y) :=
 by {intros h,
     simp [orthog],
@@ -95,16 +105,19 @@ end
 lemma pythagoras_iff_orthog {x y : α} : ∥x+y∥^2 = ∥x∥^2 + ∥y∥^2 ↔ x ⊥ y :=
 ⟨orthog_of_pythagoras, pythagoras⟩
 
-instance : has_norm ℝ := ⟨abs⟩ 
+-- Scott: maybe even provide the instance of `normed_group`?
+-- I wonder where in mathlib this belongs. Possibly even `data.real.basic`.
+instance : has_norm ℝ := ⟨abs⟩
 
 @[simp] theorem cauchy_schwarz (x y : α) : ∥x†y∥≤∥x∥*∥y∥ :=
 begin
     by_cases (y=0),
 
-    dsimp [norm],
-    rw [h],
-    simp,
+    { dsimp [norm],
+      rw [h],
+      simp },
 
+    -- Scott: this can be a separate lemma
     have k : ∥x†y∥^2≤∥x∥^2*∥y∥^2 → ∥x†y∥≤∥x∥*∥y∥ := begin
         intros w,
         have w₁ := sqrt_le_sqrt w,
@@ -113,9 +126,12 @@ begin
         exact w₁,
     end,
     apply k,
+    clear k,
     let c := (x†y)/∥y∥^2,
     have w := pow_two_nonneg (∥x-c•y∥),
     rw [sqr_norm, sqr_norm] at *,
+    -- Scott: lots can and should be factored out here. e.g. the next two lines
+    -- should be factored out as a lemma.
     dsimp [norm],
     rw [←sqrt_sqr_eq_abs, sqr_sqrt (pow_two_nonneg _)],
     dsimp [ip_self] at *,
@@ -173,6 +189,7 @@ end
 lemma mul_le_mul_right_le (a b c : ℝ) : c ≥ 0 → a ≤ b → a*c ≤ b*c :=
 begin
     intros k w,
+    library_search, -- Scott: already in mathlib
     by_cases (c=0),
 
     rw [h, mul_zero, mul_zero],
@@ -192,6 +209,7 @@ end
 
 theorem triangle_ineq (x y : α) : ∥x+y∥≤∥x∥+∥y∥ :=
 begin
+    -- Scott: lemma!
     have w : ∥x+y∥^2≤(∥x∥+∥y∥)^2 → ∥x+y∥≤∥x∥+∥y∥ := begin
         intros h,
         rw [←sqrt_le (sqr_nonneg _) (sqr_nonneg _),
@@ -224,9 +242,9 @@ begin
 end
 
 def ip_space_is_metric_space : metric_space α :=
-{dist_self := ip_dist_self, 
- eq_of_dist_eq_zero := ip_eq_of_dist_eq_zero, 
- dist_comm := ip_dist_comm, 
+{dist_self := ip_dist_self,
+ eq_of_dist_eq_zero := ip_eq_of_dist_eq_zero,
+ dist_comm := ip_dist_comm,
  dist_triangle := ip_dist_triangle}
 
 def ip_space_is_normed_group : normed_group α :=
@@ -275,6 +293,8 @@ begin
     rw [sqrt_sqr (norm_nonneg _), sqrt_sqr k] at w,
     exact w.symm,
 end
+
+-- Scott: are these abandoned? Maybe move them closer to the point of use?
 
 lemma four_ne_zero : (4 : ℝ) ≠ 0 :=
 ne.symm (ne_of_lt four_pos)

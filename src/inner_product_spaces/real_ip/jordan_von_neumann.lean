@@ -22,8 +22,9 @@ class ℝ_parallelopotamus (β : Type*) [normed_space ℝ β] :=
 (parallelogram_law : ∀ (x y : β), ∥x+y∥^2+∥x-y∥^2=2*∥x∥^2+2*∥y∥^2)
 
 variables {β : Type*}
-variables [decidable_eq β] [normed_space ℝ β] [ℝ_parallelopotamus β] 
+variables [decidable_eq β] [normed_space ℝ β] [ℝ_parallelopotamus β]
 
+-- Scott: what is this lemma for?
 @[simp] lemma par_law (x y : β) : ∥x+y∥^2 + ∥x-y∥^2 = 2*∥x∥^2+2*∥y∥^2 :=
 by apply ℝ_parallelopotamus.parallelogram_law
 
@@ -55,7 +56,7 @@ begin
         rw [w],
     end,
     have w : ((0 : ℝ) ^2) = 0 := by {rw [pow_two, mul_zero]},
-    rw [w, neg_zero, zero_add, h, norm_smul, pow_two, @nonneg_norm 2 (by linarith), 
+    rw [w, neg_zero, zero_add, h, norm_smul, pow_two, @nonneg_norm 2 (by linarith),
     ←pow_two, mul_pow],
     have k : (2 : ℝ)^2 = (4 : ℝ) := begin
         have k₁ : 2^2 = 4 := rfl,
@@ -88,8 +89,11 @@ begin
     rw [k, one_mul],
 end
 
+-- Scott: so what's the plan here?
+-- How many applications of the parallelogram axiom are required?
 lemma par_add_law {x y z : β} : ∥x+y+z∥^2 = ∥x+y∥^2 + ∥x+z∥^2 + ∥y+z∥^2 - ∥x∥^2 - ∥y∥^2 - ∥z∥^2 :=
 begin
+    dsimp [(†)],
     sorry
 end
 
@@ -116,7 +120,7 @@ begin
     simp,
 
     simp,
-    rw [add_smul, one_smul, par_add_in_fst_coord, n_ih, 
+    rw [add_smul, one_smul, par_add_in_fst_coord, n_ih,
     ←one_mul (x†z), ←mul_assoc, ←right_distrib, mul_one, one_mul],
 end
 
@@ -161,7 +165,7 @@ begin
     let q := r.denom,
     have qh : q = r.denom := rfl,
     let h := r.pos,
-    
+
     rw [←qh] at h,
     have w := @par_smul_nat _ _ _ _ ((r : ℝ) • x) z q,
     have w₁ : ↑(r.denom) * ↑(rat.mk (r.num) ↑(r.denom)) = ↑r.num := sorry,
