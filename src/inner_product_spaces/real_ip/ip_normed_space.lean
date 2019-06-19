@@ -7,98 +7,69 @@ variables [decidable_eq α] [add_comm_group α] [vector_space ℝ α] [ℝ_inner
 
 open real
 
--- Scott: reverse LHS and RHS, and rename `neg_sub`. Oh, and look at that:
-#check neg_sub
-lemma neg_sub_eq_sub_neg {α : Type*} [add_comm_group α] (a b : α) : a-b = -(b-a) := by simp
+instance ip_space_has_dist : has_dist α := ⟨λ x y, sqrt (norm_sq (x-y))⟩
 
--- Scott: I don't this line has any effect:
-local notation `sqrt` := real.sqrt
+lemma ip_dist_self (x : α) : dist x x = 0 :=
+by {dsimp [dist],
+    rw [add_right_neg, norm_sq_zero, sqrt_zero]}
 
-instance ip_space_has_dist : has_dist α := ⟨λ x y, sqrt (ip_self (x-y))⟩
-
--- Scott: convert intros to named argument, here and throughout
-lemma ip_dist_self : ∀ x : α, dist x x = 0 :=
-by {intros x,
-    dsimp [dist],
-    rw [add_right_neg, ip_self_zero, sqrt_zero]}
-
--- Scott: rename `eq_of_dist_zero`?
-lemma ip_eq_of_dist_eq_zero : ∀ (x y : α), dist x y = 0 → x = y :=
+lemma ip_eq_of_dist_eq_zero (x y : α) (h : dist x y = 0) : x = y :=
 begin
-    intros x y h,
     dsimp [dist] at h,
-    rw [real.sqrt_eq_zero (ip_self_nonneg (x+-y)), zero_iff_ip_self_zero] at h,
+    rw [real.sqrt_eq_zero (norm_sq_nonneg (x+-y)), zero_iff_norm_sq_zero] at h,
     exact (eq_of_sub_eq_zero h),
 end
 
-lemma ip_dist_comm : ∀ (x y : α), dist x y = dist y x :=
-by {intros x y,
-    dsimp [dist],
-    rw [real.sqrt_inj (ip_self_nonneg (x+-y)) (ip_self_nonneg (y+-x)),
-    ←sub_eq_add_neg, neg_sub_eq_sub_neg, ip_self_neg_eq, sub_eq_add_neg]}
+lemma ip_dist_comm (x y : α) : dist x y = dist y x :=
+by {dsimp [dist],
+    rw [←sub_eq_add_neg, ←sub_eq_add_neg, real.sqrt_inj (norm_sq_nonneg (x-y)) (norm_sq_nonneg (y-x)),
+    ←neg_sub x y, norm_sq_neg_eq, sub_eq_add_neg]}
 
-instance ip_space_has_norm : has_norm α := ⟨λ x, sqrt ((ip_self x))⟩
+instance ip_space_has_norm : has_norm α := ⟨λ x, sqrt ((norm_sq x))⟩
 
-@[simp] lemma sqr_norm {x : α} : ∥x∥^2 = (ip_self x) := real.sqr_sqrt (ip_self_nonneg x)
+@[simp] lemma sqr_norm {x : α} : ∥x∥^2 = (norm_sq x) := real.sqr_sqrt (norm_sq_nonneg x)
 
-lemma ip_norm_nonneg {x : α} : ∥x∥ ≥ 0 := real.sqrt_nonneg (ip_self x)
+lemma ip_norm_nonneg {x : α} : ∥x∥ ≥ 0 := real.sqrt_nonneg (norm_sq x)
 
--- Scott: should this really be reducible? It seems a useful predicate.
-@[reducible] def orthog (x y : α) := x†y = 0
+@[reducible] def orthog (x y : α) := ⟪x ∥ y⟫ = 0
 
--- Scott: I think this is going to have to be a local notation, because they use
--- it for the bottom element of a lattice.
 infix `⊥` := orthog
 
-lemma orthog_symm {x y : α} : x ⊥ y → y ⊥ x :=
-by {intros h,
-    dsimp [orthog] at *,
+lemma orthog_symm {x y : α} (h : x ⊥ y) : y ⊥ x :=
+by {dsimp [orthog] at *,
     rw [←conj_symm x y],
     exact h}
 
--- Scott: can we get rid of this one?
-lemma orthog_symm' {x y : α} : x ⊥ y → y†x = 0 :=
-begin
-    intros h,
-    have w := orthog_symm h,
-    dsimp [orthog] at w,
-    exact w,
-end
-
 lemma zero_of_orthog_self {x : α} : x ⊥ x → x = 0 :=
-(zero_iff_ip_self_zero x).1
+(zero_iff_norm_sq_zero x).1
 
-lemma add_orthog {x y z : α} : x⊥z → y⊥z → (x+y)⊥z :=
-by {intros hx hy, dsimp [orthog] at *, rw [add_in_fst_coord, hx, hy, add_zero]}
+lemma add_orthog {x y z : α} (hx : x ⊥ z) (hy : y ⊥ z) : (x+y)⊥z :=
+by {dsimp [orthog] at *, rw [add_left, hx, hy, add_zero]}
 
--- Scott: this isn't a simp lemma
-@[simp] lemma mul_orthog {x y : α} {a b : ℝ} : x ⊥ y → (a•x) ⊥ (b•y) :=
+lemma mul_orthog (x y : α) (a b : ℝ) : x ⊥ y → (a•x) ⊥ (b•y) :=
 by {intros h,
     simp [orthog],
     repeat {right},
     exact h}
 
-lemma pythagoras {x y : α} : x ⊥ y → ∥x+y∥^2 = ∥x∥^2+∥y∥^2 :=
+lemma pythagoras {x y : α} (h : x ⊥ y) : ∥x+y∥^2 = ∥x∥^2+∥y∥^2 :=
 begin
-    intros h,
     dsimp [orthog] at h,
-    simp only [sqr_norm, ip_self],
-    simp,
+    simp [sqr_norm, norm_sq],
     have w := @conj_symm α _ _ _ _ x y,
     rw [h] at w,
     rw [h, ←w, zero_add, zero_add],
 end
 
-lemma orthog_of_pythagoras {x y : α} : ∥x+y∥^2 = ∥x∥^2 + ∥y∥^2 → x ⊥ y :=
+lemma orthog_of_pythagoras {x y : α} (h : ∥x+y∥^2 = ∥x∥^2 + ∥y∥^2) : x ⊥ y :=
 begin
-    intros h,
-    rw [sqr_norm, sqr_norm, sqr_norm, ip_self_add, add_assoc] at h,
-    conv at h {to_rhs, rw [←add_zero (ip_self y)]},
+    rw [sqr_norm, sqr_norm, sqr_norm, norm_sq_add, add_assoc] at h,
+    conv at h {to_rhs, rw [←add_zero (norm_sq y)]},
     have w := (add_left_inj _).mp h,
     have k := congr_arg (λ (r : ℝ), 1/2 * r) w,
     simp at k,
     rw [left_distrib, ←mul_assoc, inv_mul_cancel two_ne_zero, one_mul] at k,
-    conv at k {to_rhs, rw [←add_zero (2⁻¹ * ip_self y)]},
+    conv at k {to_rhs, rw [←add_zero (2⁻¹ * norm_sq y)]},
     exact (add_left_inj _).mp k,
 end
 
@@ -109,51 +80,47 @@ lemma pythagoras_iff_orthog {x y : α} : ∥x+y∥^2 = ∥x∥^2 + ∥y∥^2 ↔
 -- I wonder where in mathlib this belongs. Possibly even `data.real.basic`.
 instance : has_norm ℝ := ⟨abs⟩
 
-@[simp] theorem cauchy_schwarz (x y : α) : ∥x†y∥≤∥x∥*∥y∥ :=
+lemma norm_leq_of_norm_sq_leq (x y : α) (h : ∥⟪x ∥ y⟫∥^2≤∥x∥^2*∥y∥^2) : ∥⟪x ∥ y⟫∥≤∥x∥*∥y∥ :=
+by {have w := sqrt_le_sqrt h,
+        dsimp [norm] at *,
+        rw [sqrt_mul (pow_two_nonneg _), sqrt_sqr (abs_nonneg _), sqr_sqrt (norm_sq_nonneg _), sqr_sqrt (norm_sq_nonneg _)] at w,
+        exact w}
+
+lemma norm_sq_ip_eq_ip_sqr (x y : α) : ∥⟪x ∥ y⟫∥^2 = ⟪x ∥ y⟫^2 :=
+by {dsimp [norm], rw [←sqrt_sqr_eq_abs, sqr_sqrt (pow_two_nonneg _)]}
+
+@[simp] theorem cauchy_schwarz (x y : α) : ∥⟪x ∥ y⟫∥≤∥x∥*∥y∥ :=
 begin
     by_cases (y=0),
 
     { dsimp [norm],
       rw [h],
       simp },
-
-    -- Scott: this can be a separate lemma
-    have k : ∥x†y∥^2≤∥x∥^2*∥y∥^2 → ∥x†y∥≤∥x∥*∥y∥ := begin
-        intros w,
-        have w₁ := sqrt_le_sqrt w,
-        dsimp [norm] at *,
-        rw [sqrt_mul (pow_two_nonneg _), sqrt_sqr (abs_nonneg _), sqr_sqrt (ip_self_nonneg _), sqr_sqrt (ip_self_nonneg _)] at w₁,
-        exact w₁,
-    end,
-    apply k,
-    clear k,
-    let c := (x†y)/∥y∥^2,
+    apply norm_leq_of_norm_sq_leq,
+    let c := ⟪x ∥ y⟫/∥y∥^2,
     have w := pow_two_nonneg (∥x-c•y∥),
     rw [sqr_norm, sqr_norm] at *,
-    -- Scott: lots can and should be factored out here. e.g. the next two lines
-    -- should be factored out as a lemma.
-    dsimp [norm],
-    rw [←sqrt_sqr_eq_abs, sqr_sqrt (pow_two_nonneg _)],
-    dsimp [ip_self] at *,
+    rw [norm_sq_ip_eq_ip_sqr],
+    dsimp [norm_sq] at *,
     simp at w,
     repeat {rw [←neg_one_smul ℝ (c•y)] at w},
-    repeat {rw [mul_in_fst_coord] at w},
-    repeat {rw [mul_in_snd_coord] at w},
+    repeat {rw [mul_left] at w},
+    repeat {rw [mul_right] at w},
     rw [conj_symm y x] at w,
     simp at w,
-    have k₁ : c = (x†y)/∥y∥^2 := by refl,
+    have k₁ : c = ⟪x ∥ y⟫/∥y∥^2 := by refl,
     rw [k₁] at w,
-    have k₂ := (@neq_zero_iff_ip_self_neq_zero α _ _ _ _ y).2 h,
+    have k₂ := (neq_zero_iff_norm_sq_neq_zero y).2 h,
     simp only [sqr_norm] at w,
-    have w₁ := div_mul_cancel (x†y) k₂,
-    dsimp [ip_self] at *,
+    have w₁ := div_mul_cancel ⟪x ∥ y⟫ k₂,
+    dsimp [norm_sq] at *,
     rw [w₁] at w,
     simp at w,
     have w₂ := le_of_sub_nonneg w,
-    have w₃ : (x†y)/(y†y) = (x†y)*(y†y)⁻¹ := by refl,
+    have w₃ : ⟪x ∥ y⟫/⟪y ∥ y⟫ = ⟪x ∥ y⟫*⟪y ∥ y⟫⁻¹ := by refl,
     rw [mul_comm, w₃, ←mul_assoc, ←pow_two] at w₂,
-    have w₄ := @ip_self_nonneg α _ _ _ _ y,
-    dsimp [ip_self] at w₄,
+    have w₄ := norm_sq_nonneg y,
+    dsimp [norm_sq] at w₄,
     have w₅ := mul_le_mul_of_nonneg_right w₂ w₄,
     rw [mul_assoc, inv_mul_cancel k₂, mul_one] at w₅,
     exact w₅,
@@ -186,43 +153,22 @@ begin
     exact absurd k l,
 end
 
-lemma mul_le_mul_right_le (a b c : ℝ) : c ≥ 0 → a ≤ b → a*c ≤ b*c :=
-begin
-    intros k w,
-    library_search, -- Scott: already in mathlib
-    by_cases (c=0),
+-- mul_le_mul_right_le --> mul_le_mul_of_nonneg_right
 
-    rw [h, mul_zero, mul_zero],
-
-    have k' : c > 0 := begin
-        dsimp [(≥)] at k,
-        rw [le_iff_eq_or_lt] at k,
-        cases k,
-
-        exact absurd k.symm h,
-
-        exact k,
-    end,
-
-    exact (mul_le_mul_right k').2 w,
-end
+lemma norm_add_leq_of_norm_add_sqr_leq (x y : α) (h : ∥x+y∥^2≤(∥x∥+∥y∥)^2) : ∥x+y∥≤∥x∥+∥y∥ :=
+by {rw [←sqrt_le (sqr_nonneg _) (sqr_nonneg _),
+            sqrt_sqr (ip_norm_nonneg),
+            sqrt_sqr (add_nonneg ip_norm_nonneg ip_norm_nonneg)] at h,
+        exact h}
 
 theorem triangle_ineq (x y : α) : ∥x+y∥≤∥x∥+∥y∥ :=
 begin
-    -- Scott: lemma!
-    have w : ∥x+y∥^2≤(∥x∥+∥y∥)^2 → ∥x+y∥≤∥x∥+∥y∥ := begin
-        intros h,
-        rw [←sqrt_le (sqr_nonneg _) (sqr_nonneg _),
-            sqrt_sqr (ip_norm_nonneg),
-            sqrt_sqr (add_nonneg ip_norm_nonneg ip_norm_nonneg)] at h,
-        exact h,
-    end,
-    apply w,
+    apply norm_add_leq_of_norm_add_sqr_leq,
     rw [sqr_norm, pow_two, left_distrib, right_distrib, right_distrib, ←pow_two,
-    ←pow_two, sqr_norm, sqr_norm, ip_self_add, add_assoc, add_assoc, add_le_add_iff_left,
-    ←add_assoc, add_le_add_iff_right (ip_self y), mul_comm ∥y∥, ←mul_two, mul_comm],
+    ←pow_two, sqr_norm, sqr_norm, norm_sq_add, add_assoc, add_assoc, add_le_add_iff_left,
+    ←add_assoc, add_le_add_iff_right (norm_sq y), mul_comm ∥y∥, ←mul_two, mul_comm],
     apply mul_le_mul_of_nonneg_right,
-    apply le_trans (le_abs_self (x†y)),
+    apply le_trans (le_abs_self ⟪x ∥ y⟫),
     exact cauchy_schwarz x y,
 
     rw [le_iff_eq_or_lt],
@@ -230,11 +176,10 @@ begin
     exact two_pos,
 end
 
-lemma ip_dist_eq : ∀ (x y : α), dist x y = norm (x - y) := by {intros x y, refl}
+lemma ip_dist_eq (x y : α) : dist x y = norm (x - y) := rfl
 
-lemma ip_dist_triangle : ∀ (x y z : α), dist x z ≤ dist x y + dist y z :=
+lemma ip_dist_triangle (x y z : α) : dist x z ≤ dist x y + dist y z :=
 begin
-    intros x y z,
     repeat {rw [ip_dist_eq]},
     have w : x - z = (x-y) + (y-z) := by simp,
     rw [w],
@@ -261,9 +206,9 @@ begin
     have h₁ := real.sqrt_sqr (abs_nonneg a),
     have h₂ := pow_two_nonneg (abs a),
     rw [←h₁, ←real.sqrt_mul h₂],
-    have h₃ := mul_nonneg h₂ (ip_self_nonneg x),
-    rw [real.sqrt_inj (ip_self_nonneg (a•x)) h₃],
-    simp only [ip_self, mul_in_fst_coord, mul_in_snd_coord],
+    have h₃ := mul_nonneg h₂ (norm_sq_nonneg x),
+    rw [real.sqrt_inj (norm_sq_nonneg (a•x)) h₃],
+    simp only [norm_sq, mul_left, mul_right],
     rw [←mul_assoc, ←pow_two, sqr_abs],
 end
 
@@ -275,22 +220,13 @@ lemma norm_neq_zero_iff_neq_zero {β : Type*} [normed_space ℝ β] (x : β) : �
 ⟨by {apply mt, exact (norm_eq_zero x).2}, by {apply mt, exact (norm_eq_zero x).1}⟩
 
 lemma norm_eq_iff_norm_sq_eq {β : Type*} [normed_space ℝ β] {x y : β} : ∥x∥=∥y∥ ↔ ∥x∥^2 = ∥y∥^2 :=
-begin
-    split,
-
-    apply congr_arg (λ (r : ℝ), r^2),
-
-    intros h,
-    have w := congr_arg (λ (r : ℝ), sqrt r) h,
-    simp at w,
-    exact w,
-end
+⟨by {apply congr_arg (λ (r : ℝ), r^2)}, 
+ by {intros h, have w := congr_arg (λ (r : ℝ), sqrt r) h, simp at w, exact w}⟩
 
 lemma norm_sqr_leq_iff_norm_leq {β : Type*} [normed_space ℝ β] {x : β} {a : ℝ} {k : a ≥ 0}: ∥x∥^2 ≤ a^2 ↔ ∥x∥ ≤ a :=
 begin
     have w := sqrt_le (mul_nonneg (norm_nonneg x) (norm_nonneg x)) (mul_nonneg k k),
-    repeat {rw [←pow_two] at w},
-    rw [sqrt_sqr (norm_nonneg _), sqrt_sqr k] at w,
+    rw [←pow_two, ←pow_two, sqrt_sqr (norm_nonneg _), sqrt_sqr k] at w,
     exact w.symm,
 end
 

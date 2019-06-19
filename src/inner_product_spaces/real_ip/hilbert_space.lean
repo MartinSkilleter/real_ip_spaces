@@ -24,16 +24,14 @@ section ip_map
 
 def ip_map (x : α) : linear_map ℝ α ℝ :=
 begin
-    constructor,
-    swap 3,
-    use λ y, x†y,
+    refine_struct {..},
+    use λ y, ⟪x ∥ y⟫,
     repeat {simp},
 end
-.
 
-@[simp] lemma ip_map_to_fun (x : α) : ⇑(ip_map x) = λ y, x † y := rfl
+@[simp] lemma ip_map_to_fun (x : α) : ⇑(ip_map x) = λ y, ⟪x ∥ y⟫ := rfl
 
-theorem ip_map_is_bounded_linear_map (x : α) : @is_bounded_linear_map ℝ _ α (ip_space_is_normed_space) ℝ _ (ip_map x) :=
+theorem ip_map_is_bounded_linear_map (x : α) : @is_bounded_linear_map ℝ _ α ip_space_is_normed_space ℝ _ (ip_map x) :=
 begin
     constructor,
     constructor,
@@ -59,11 +57,11 @@ begin
     rw [ne.def] at k,
     sorry,
     intros y,
-    exact cauchy_schwarz,
+    exact cauchy_schwarz x y,
 end
 
-lemma ip_map_is_continuous (x : α) : @continuous α _ (α_topological_space) (ℝ_topological_space) (ip_map x) :=
-@is_bounded_linear_map.continuous ℝ _ α (ip_space_is_normed_space) ℝ _ _ (ip_map_is_bounded_linear_map x)
+lemma ip_map_is_continuous (x : α) : @continuous α _ α_topological_space ℝ_topological_space (ip_map x) :=
+@is_bounded_linear_map.continuous ℝ _ α ip_space_is_normed_space ℝ _ _ (ip_map_is_bounded_linear_map x)
 
 end ip_map
 
@@ -84,24 +82,20 @@ variables {T : unitary_operator α β}
 @[simp] lemma norm_preserving (x : α) : ∥T.to_fun x∥ = ∥x∥ :=
 by apply unitary_operator.norm_preserving
 
-lemma polarisation_identity (x y : α) : x†y = 1/4*(∥x+y∥^2 - ∥x-y∥^2) :=
+lemma polarisation_identity (x y : α) : ⟪x ∥ y⟫ = 1/4*(∥x+y∥^2 - ∥x-y∥^2) :=
 begin
-    conv {to_lhs, rw [←one_mul (x†y), ←@inv_mul_cancel _ _ (4 : ℝ) four_ne_zero]},
+    conv {to_lhs, rw [←one_mul ⟪x ∥ y⟫, ←@inv_mul_cancel _ _ (4 : ℝ) four_ne_zero]},
     rw [←one_div_eq_inv, mul_assoc],
     apply congr_arg (λ (r : ℝ), 1/4 * r),
     dsimp [norm],
-    rw [sqr_sqrt (ip_self_nonneg _), sqr_sqrt (ip_self_nonneg _)],
-    dsimp [ip_self],
-    repeat {rw [add_in_fst_coord]},
-    repeat {rw [add_in_snd_coord]},
-    rw [←neg_one_smul ℝ y],
-    repeat {rw [mul_in_fst_coord]},
-    repeat {rw [mul_in_snd_coord]},
-    rw [conj_symm y x],
+    rw [sqr_sqrt (norm_sq_nonneg _), sqr_sqrt (norm_sq_nonneg _)],
+    dsimp [norm_sq],
+    rw [add_left, add_left, add_right, add_right, add_right, add_right, ←neg_one_smul ℝ y,
+    mul_left, mul_left, mul_right, mul_right, conj_symm y x],
     ring,
 end
 
-@[simp] theorem ip_preserving (x y : α) : (T.to_fun x) † (T.to_fun y) = x†y :=
+@[simp] theorem ip_preserving (x y : α) : ⟪T.to_fun x ∥ T.to_fun y⟫ = ⟪x ∥ y⟫ :=
 begin
     rw [polarisation_identity (T.to_fun x) (T.to_fun y), ←linear_map.add, 
         sub_eq_add_neg (T.to_fun x) (T.to_fun y), ←neg_one_smul ℝ (T.to_fun y),

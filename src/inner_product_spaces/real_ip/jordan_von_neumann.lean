@@ -14,7 +14,7 @@ theorem ip_parallelogram_law (x y : α) : ∥x+y∥^2+∥x-y∥^2=2*∥x∥^2+2*
 begin
     repeat {rw [sqr_norm]},
     simp,
-    rw [←neg_one_smul ℝ y, mul_in_snd_coord],
+    rw [←neg_one_smul ℝ, mul_right],
     ring,
 end
 
@@ -24,7 +24,6 @@ class ℝ_parallelopotamus (β : Type*) [normed_space ℝ β] :=
 variables {β : Type*}
 variables [decidable_eq β] [normed_space ℝ β] [ℝ_parallelopotamus β]
 
--- Scott: what is this lemma for?
 @[simp] lemma par_law (x y : β) : ∥x+y∥^2 + ∥x-y∥^2 = 2*∥x∥^2+2*∥y∥^2 :=
 by apply ℝ_parallelopotamus.parallelogram_law
 
@@ -32,24 +31,19 @@ instance par_has_inner_product : has_ℝ_inner_product β :=
 ⟨λ x y, 1/4*(∥x+y∥^2 - ∥x-y∥^2)⟩
 
 lemma nonneg_norm {a : ℝ} {h : a ≥ 0} : ∥a∥ = a :=
-begin
-    dsimp [norm],
-    rw [←real.sqrt_sqr_eq_abs, real.sqrt_sqr h],
-end
+by {dsimp [norm], rw [←real.sqrt_sqr_eq_abs, real.sqrt_sqr h]}
 
 lemma neg_norm {a : ℝ} {h : a < 0} : ∥a∥ = -a :=
-begin
-    have k := @nonneg_norm _ (le_of_lt (neg_pos_of_neg h)),
-    dsimp [norm] at *,
-    simp at k,
-    exact k,
-end
+by {dsimp [norm],
+    rw [←abs_neg],
+    exact @nonneg_norm _ (le_of_lt (neg_pos_of_neg h))}
 
 set_option class.instance_max_depth 100
-lemma ip_self_eq_norm_sq (x : β) : (x†x) = ∥x∥^2 :=
+lemma norm_sq_eq_norm_sqr (x : β) : ⟪x ∥ x⟫ = ∥x∥^2 :=
 begin
-    dsimp [(†)],
+    dsimp [inner_product],
     simp,
+    have l : (1 : ℝ) + 1 = 2 := rfl,
     have h : x + x = (2 : ℝ) • x := begin
         rw [←one_smul ℝ x, ←add_smul, one_smul],
         have w : (1 : ℝ) + 1 = 2 := rfl,
@@ -69,18 +63,13 @@ begin
     exact four_ne_zero,
 end
 
-lemma par_pos_def (x : β) : x ≠ (0 : β) → x†x > (0 : ℝ) :=
-begin
-    intros h,
-    have w : ∥x∥ > (0 : ℝ) := by exact ((norm_pos_iff x).2 h),
-    have w₁ := (mul_pos w w),
-    rw [←pow_two, ←ip_self_eq_norm_sq x] at w₁,
-    exact w₁,
-end
+lemma par_pos_def (x : β) (h : x ≠ (0 : β)) : ⟪x ∥ x⟫ > (0 : ℝ) :=
+by {rw [norm_sq_eq_norm_sqr, pow_two],
+    exact mul_pos ((norm_pos_iff x).2 h) ((norm_pos_iff x).2 h)}
 
-lemma par_conj_symm (x y : β) : x†y = y†x :=
+lemma par_conj_symm (x y : β) : ⟪x ∥ y⟫ = ⟪y ∥ x⟫ :=
 begin
-    dsimp [(†)],
+    dsimp [inner_product],
     simp,
     have w : x+-y = -(y+-x) := by simp,
     rw [w, ←neg_one_smul ℝ (y+-x), norm_smul],
@@ -93,40 +82,32 @@ end
 -- How many applications of the parallelogram axiom are required?
 lemma par_add_law {x y z : β} : ∥x+y+z∥^2 = ∥x+y∥^2 + ∥x+z∥^2 + ∥y+z∥^2 - ∥x∥^2 - ∥y∥^2 - ∥z∥^2 :=
 begin
-    dsimp [(†)],
+    dsimp [inner_product],
     sorry
 end
 
-lemma par_add_in_fst_coord {x y z : β} : (x+y)†z = x†z + y†z :=
+lemma par_add_in_fst_coord {x y z : β} : ⟪x+y ∥ z⟫ = ⟪x ∥ z⟫ + ⟪y ∥ z⟫ :=
 begin
-    dsimp [(†)],
+    dsimp [inner_product],
     rw [par_add_law, par_add_law, ←left_distrib],
     apply congr_arg (λ (r : ℝ), 1/4*r),
     simp,
     ring,
 end
 
-@[simp] lemma par_right_orthog_to_zero {x : β} : 0†x = 0 :=
-by {dsimp [(†)], simp}
+@[simp] lemma par_right_orthog_to_zero {x : β} : ⟪0 ∥ x⟫ = 0 :=
+by {dsimp [inner_product], simp}
 
-@[simp] lemma par_left_orthog_to_zero {x : β} : x†0 = 0 :=
+@[simp] lemma par_left_orthog_to_zero {x : β} : ⟪x ∥ 0⟫ = 0 :=
 by {rw [par_conj_symm], exact par_right_orthog_to_zero}
 
-lemma par_smul_nat {x z : β} : ∀ (n : ℕ), ((n : ℝ) • x) † z = (n : ℝ) * (x † z) :=
+lemma par_smul_nat (x z : β) (n : ℕ) : ⟪(n : ℝ) • x ∥ z⟫ = (n : ℝ) * ⟪x ∥ z⟫ :=
+by {induction n, {simp}, {rw [nat.cast_succ, add_smul, one_smul, par_add_in_fst_coord, n_ih,
+    ←one_mul ⟪x ∥ z⟫, ←mul_assoc, ←right_distrib, mul_one, one_mul]}}
+
+lemma par_smul_neg {x z : β} : ⟪-x ∥ z⟫ = -⟪x ∥ z⟫ :=
 begin
-    intros n,
-    induction n,
-
-    simp,
-
-    simp,
-    rw [add_smul, one_smul, par_add_in_fst_coord, n_ih,
-    ←one_mul (x†z), ←mul_assoc, ←right_distrib, mul_one, one_mul],
-end
-
-lemma par_smul_neg {x z : β} : (-x) † z = -(x † z) :=
-begin
-    dsimp [(†)],
+    dsimp [inner_product],
     simp,
     ring,
     have w₁ : -x-z = -(x+z) := by simp,
@@ -142,24 +123,16 @@ begin
     linarith,
 end
 
-lemma par_smul_int {x z : β} : ∀ (n : ℤ), ((n : ℝ) • x) † z = (n : ℝ) * (x † z) :=
+lemma par_smul_int {x z : β} (n : ℤ) : ⟪(n : ℝ) • x ∥ z⟫ = (n : ℝ) * ⟪x ∥ z⟫ :=
+by {cases n, {rw [int.cast_of_nat], exact par_smul_nat x z n}, 
+    {rw [int.cast_neg_succ_of_nat, neg_add_rev, ←neg_one_mul, ←neg_one_mul ↑n, 
+    ←left_distrib, ←smul_smul, neg_one_smul, par_smul_neg, ←neg_one_mul, mul_assoc],
+    apply congr_arg (λ (r : ℝ), (-1)*r),
+    rw [←nat.cast_one, ←nat.cast_add],
+    exact par_smul_nat x z (1+n)}}
+
+lemma par_smul_rat {x z : β} (r : ℚ) : ⟪(r : ℝ) • x ∥ z⟫ = (r : ℝ) * ⟪x ∥ z⟫ :=
 begin
-    intros n,
-    cases n,
-
-    simp,
-    exact par_smul_nat n,
-
-    simp,
-    rw [←neg_one_mul, ←neg_one_mul ↑n, ←left_distrib, ←smul_smul, neg_one_smul, par_smul_neg],
-    have w := @par_smul_nat β _ _ _ x z (1+n),
-    simp at w,
-    rw [w, ←neg_one_mul, ←mul_assoc],
-end
-
-lemma par_smul_rat {x z : β} : ∀ (r : ℚ), ((r : ℝ) • x) † z = (r : ℝ) * (x † z) :=
-begin
-    intros r,
     let p := r.num,
     have ph : p = r.num := rfl,
     let q := r.denom,
@@ -173,16 +146,13 @@ begin
     repeat {sorry},
 end
 
-lemma par_smul_real {x z : β} : ∀ (r : ℝ), (r • x) † z = r * (x † z) :=
+lemma par_smul_real {x z : β} (r : ℝ) : ⟪r • x ∥ z⟫ = r * ⟪x ∥ z⟫ :=
 begin
-    intros r,
     sorry,
 end
 
-lemma par_linearity (x y z : β) (a : ℝ) : (a•x+y)†z = a*(x†z) + y†z :=
-begin
-    rw [par_add_in_fst_coord, par_smul_real],
-end
+lemma par_linearity (x y z : β) (a : ℝ) : ⟪a•x+y ∥ z⟫ = a*⟪x ∥ z⟫ + ⟪y ∥ z⟫ :=
+by {rw [par_add_in_fst_coord, par_smul_real]}
 
 instance par_is_ip_space : ℝ_inner_product_space β :=
 {conj_symm := par_conj_symm, linearity := par_linearity, pos_def := par_pos_def}
