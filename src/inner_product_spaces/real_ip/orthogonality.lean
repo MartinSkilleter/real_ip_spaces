@@ -572,10 +572,9 @@ begin
     simp,
 end
 
-theorem orthog_direct_sum_unique (x u₁ u₂ v₁ v₂ : α) (U₁ : u₁ ∈ S) (U₂ : u₂ ∈ S) (V₁ : v₁ ∈ perp S.carrier) (V₂ : v₂ ∈ perp S.carrier) :
-x = u₁ + v₁ → x = u₂ + v₂ → (u₁ = u₂ ∧ v₁ = v₂) :=
+theorem orthog_direct_sum_unique (x u₁ u₂ v₁ v₂ : α) (U₁ : u₁ ∈ S) (U₂ : u₂ ∈ S) (V₁ : v₁ ∈ perp S.carrier) (V₂ : v₂ ∈ perp S.carrier)
+(k₁ : x = u₁ + v₁) (k₂ : x = u₂ + v₂) : (u₁ = u₂ ∧ v₁ = v₂) :=
 begin
-    intros k₁ k₂,
     rw [k₁] at k₂,
     have k₃ : u₁ - u₂ = v₂ - v₁ := begin
         have l₁ := congr_arg (λ (z : α), z - u₂ - v₁) k₂,
@@ -594,8 +593,7 @@ begin
     rw [@perp_int_trivial α _ _ _ _ S.carrier (zero_mem S)] at w₃,
     have w₄ := sub_eq_zero.1 (eq_of_mem_singleton w₃),
     rw [k₃] at w₃,
-    have w₅ := sub_eq_zero.1 (eq_of_mem_singleton w₃),
-    exact ⟨w₄, w₅.symm⟩,
+    exact ⟨w₄, (sub_eq_zero.1 (eq_of_mem_singleton w₃)).symm⟩,
 end
 
 theorem orthog_proj_of_orthog_direct_sum (x u v : α) (U : u ∈ S) (V : v ∈ perp S.carrier) (k : x = u + v) : orthog_proj S h x = u :=
@@ -725,10 +723,10 @@ lemma fun_coe : ⇑f = f.to_fun := rfl
 variables [Hilbert_space α]
 variables (S : @submodule ℝ α _ _ _)
 
-lemma perp_trivial_of_subspace_all (h : @is_closed α (α_topological_space) S.carrier) (k₁ : ∀ (x : α), x ∈ S) (y : α) (k₂ : y ∈ perp S.carrier) : y = 0 :=
+lemma perp_trivial_of_subspace_all (h : @is_closed α α_topological_space S.carrier) (k₁ : ∀ (x : α), x ∈ S) (y : α) (k₂ : y ∈ perp S.carrier) : y = 0 :=
 by {dsimp [perp] at k₂, exact zero_of_orthog_self (k₂ y (k₁ y))}
 
-lemma perp_nonempty_of_subspace_not_all (h : @is_closed α (α_topological_space) S.carrier) : (∃ (x : α), x ∉ S) → (∃ (y : α), y ≠ 0 ∧ y ∈ perp S.carrier) :=
+lemma perp_nonempty_of_subspace_not_all (h : @is_closed α α_topological_space S.carrier) : (∃ (x : α), x ∉ S) → (∃ (y : α), y ≠ 0 ∧ y ∈ perp S.carrier) :=
 begin
     rw [awesome_mt],
     simp,
@@ -745,7 +743,7 @@ begin
     exact U,
 end
 
-lemma perp_nonempty_of_subspace_not_all' (h : @is_closed α (α_topological_space) S.carrier) (k : ∃ (x : α), x ∉ S) : ∃ (y : α), ∥y∥=1 ∧ y ∈ perp S.carrier :=
+lemma perp_nonempty_of_subspace_not_all' (h : @is_closed α α_topological_space S.carrier) (k : ∃ (x : α), x ∉ S) : ∃ (y : α), ∥y∥=1 ∧ y ∈ perp S.carrier :=
 begin
     have k₁ := perp_nonempty_of_subspace_not_all S h k,
     rcases k₁ with ⟨z, k₁, k₂⟩,
@@ -757,10 +755,8 @@ theorem riesz_rep_exists (w : @is_bounded_linear_map ℝ _ α ip_space_is_normed
 begin
     have w₁ := @bounded_functional_ker_closed α _ _ _ _ f w,
     have w₂ := orthog_direct_sum_exists (linear_map.ker f) w₁,
-    by_cases (∀ (x : α), x ∈ linear_map.ker f),
+    by_cases k : (∀ (x : α), x ∈ linear_map.ker f),
 
-    revert h,
-    intros k,
     use 0,
     ext,
     simp,
@@ -777,8 +773,6 @@ begin
     rw [w₆],
     exact linear_map.map_zero f,
 
-    revert h,
-    intros k,
     rw [not_forall] at k,
     have k₁ := perp_nonempty_of_subspace_not_all' (linear_map.ker f) w₁ k,
     rcases k₁ with ⟨z, ⟨k₁, k₂⟩⟩,
@@ -975,6 +969,5 @@ begin
 end
 
 end adjoint
-
 
 

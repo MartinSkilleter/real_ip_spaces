@@ -1,6 +1,8 @@
 import inner_product_spaces.real_ip.ip_normed_space
 import linear_algebra.basic
 import analysis.normed_space.bounded_linear_maps
+import data.set.countable
+import data.finsupp
 
 noncomputable theory
 
@@ -104,3 +106,23 @@ begin
 end
 
 end hilbert_space
+
+open set finsupp
+
+section separable
+
+def eval_f (f : α →₀ ℝ): embedding α α :=
+begin
+    refine_struct {..},
+    use (λ (a : α), (f a) • a),
+    dsimp [injective],
+    intros a₁ a₂ h,
+    
+end
+
+def coeff_sum (f : α →₀ ℝ) : finset.sum (finset.map (λ (a : α), f a • a) f.support)
+
+variables [Hilbert_space α]
+variables (sep : ∃ (S : set α), countable S ∧ ∀ (x : α) (ε > 0), ∃ (f : α →₀ ℝ), ∥sum {z | ∃ (e ∈ S), z = f e • e} - x∥ < ε)
+
+end separable

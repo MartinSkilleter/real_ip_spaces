@@ -46,20 +46,11 @@ lemma zero_of_orthog_self {x : α} : x ⊥ x → x = 0 :=
 lemma add_orthog {x y z : α} (hx : x ⊥ z) (hy : y ⊥ z) : (x+y)⊥z :=
 by {dsimp [orthog] at *, rw [add_left, hx, hy, add_zero]}
 
-lemma mul_orthog (x y : α) (a b : ℝ) : x ⊥ y → (a•x) ⊥ (b•y) :=
-by {intros h,
-    simp [orthog],
-    repeat {right},
-    exact h}
+lemma mul_orthog (x y : α) (a b : ℝ) (h : x ⊥ y) : (a•x) ⊥ (b•y) :=
+by {simp [orthog], repeat {right}, exact h}
 
-lemma pythagoras {x y : α} (h : x ⊥ y) : ∥x+y∥^2 = ∥x∥^2+∥y∥^2 :=
-begin
-    dsimp [orthog] at h,
-    simp [sqr_norm, norm_sq],
-    have w := @conj_symm α _ _ _ _ x y,
-    rw [h] at w,
-    rw [h, ←w, zero_add, zero_add],
-end
+theorem pythagoras {x y : α} (h : x ⊥ y) : ∥x+y∥^2 = ∥x∥^2+∥y∥^2 :=
+by {dsimp [orthog] at h, simp [sqr_norm, norm_sq], rw [←conj_symm x y, h, zero_add, zero_add]}
 
 lemma orthog_of_pythagoras {x y : α} (h : ∥x+y∥^2 = ∥x∥^2 + ∥y∥^2) : x ⊥ y :=
 begin
@@ -80,6 +71,8 @@ lemma pythagoras_iff_orthog {x y : α} : ∥x+y∥^2 = ∥x∥^2 + ∥y∥^2 ↔
 -- I wonder where in mathlib this belongs. Possibly even `data.real.basic`.
 instance : has_norm ℝ := ⟨abs⟩
 
+instance ℝ_normed_space : normed_space ℝ ℝ := by apply_instance
+
 lemma norm_leq_of_norm_sq_leq (x y : α) (h : ∥⟪x ∥ y⟫∥^2≤∥x∥^2*∥y∥^2) : ∥⟪x ∥ y⟫∥≤∥x∥*∥y∥ :=
 by {have w := sqrt_le_sqrt h,
         dsimp [norm] at *,
@@ -89,7 +82,7 @@ by {have w := sqrt_le_sqrt h,
 lemma norm_sq_ip_eq_ip_sqr (x y : α) : ∥⟪x ∥ y⟫∥^2 = ⟪x ∥ y⟫^2 :=
 by {dsimp [norm], rw [←sqrt_sqr_eq_abs, sqr_sqrt (pow_two_nonneg _)]}
 
-@[simp] theorem cauchy_schwarz (x y : α) : ∥⟪x ∥ y⟫∥≤∥x∥*∥y∥ :=
+theorem cauchy_schwarz (x y : α) : ∥⟪x ∥ y⟫∥≤∥x∥*∥y∥ :=
 begin
     by_cases (y=0),
 
@@ -153,8 +146,6 @@ begin
     exact absurd k l,
 end
 
--- mul_le_mul_right_le --> mul_le_mul_of_nonneg_right
-
 lemma norm_add_leq_of_norm_add_sqr_leq (x y : α) (h : ∥x+y∥^2≤(∥x∥+∥y∥)^2) : ∥x+y∥≤∥x∥+∥y∥ :=
 by {rw [←sqrt_le (sqr_nonneg _) (sqr_nonneg _),
             sqrt_sqr (ip_norm_nonneg),
@@ -199,9 +190,8 @@ def ip_space_is_normed_group : normed_group α :=
 lemma sqr_abs (r : ℝ) : r^2 = (abs r)^2 :=
 by rw [←sqrt_sqr_eq_abs, sqr_sqrt (pow_two_nonneg r)]
 
-lemma ip_norm_smul : ∀ (a : ℝ) (x : α), ∥a • x∥ = ∥a∥*∥x∥:=
+lemma ip_norm_smul (a : ℝ) (x : α) : ∥a • x∥ = ∥a∥*∥x∥:=
 begin
-    intros a x,
     dsimp [norm],
     have h₁ := real.sqrt_sqr (abs_nonneg a),
     have h₂ := pow_two_nonneg (abs a),
