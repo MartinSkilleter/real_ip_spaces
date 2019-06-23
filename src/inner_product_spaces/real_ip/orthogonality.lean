@@ -508,6 +508,30 @@ begin
     exact w₂,
 end
 
+lemma min_dist_expr (x y : α) (k : ∥y∥ = 1) : ∥x-(orthog_proj S h x + ⟪y ∥ x - orthog_proj S h x⟫•y)∥^2 = ∥x - orthog_proj S h x∥^2 - ⟪y ∥ x - orthog_proj S h x⟫^2 :=
+begin
+    rw [sub_eq_add_neg, ←neg_one_smul ℝ, smul_add, ←add_assoc, neg_one_smul ℝ, neg_one_smul ℝ,
+    sqr_norm, sqr_norm, norm_sq_add (x + -orthog_proj S h x) (-(⟪y∥x - orthog_proj S h x⟫ • y))],
+    dsimp [norm_sq],
+    rw [←neg_one_smul ℝ (⟪y∥x + -orthog_proj S h x⟫ • y), smul_smul, mul_right, conj_symm y,
+    mul_assoc, ←pow_two],
+    ring,
+    rw [add_assoc, sub_eq_add_neg (⟪x-orthog_proj S h x∥x-orthog_proj S h x⟫) (⟪x - orthog_proj S h x∥y⟫ ^ 2)],
+    apply congr_arg (λ r, ⟪x - orthog_proj S h x∥x - orthog_proj S h x⟫ + r),
+    rw [mul_left, mul_right],
+    have w : norm_sq y = ⟪y ∥ y⟫ := rfl,
+    rw [←w, ←sqr_norm, pow_two ∥y∥, k, mul_one, mul_one, ←pow_two, ←neg_one_mul ⟪x - orthog_proj S h x∥y⟫,
+    mul_pow, neg_one_pow_eq_pow_mod_two],
+    have w₁ : 2 % 2 = 0 := rfl,
+    rw [w₁, pow_zero, ←neg_one_mul, ←mul_assoc, ←right_distrib],
+    apply congr_arg (λ r, r * ⟪x - orthog_proj S h x∥y⟫ ^ 2),
+    rw [←neg_neg (1 : ℝ), mul_comm, ←neg_one_mul, ←neg_one_mul (-(1 : ℝ)), mul_assoc, ←left_distrib],
+    apply congr_arg (λ r, (-(1 : ℝ))*r),
+    rw [neg_one_mul, neg_neg, one_mul, ←sub_eq_add_neg],
+    have w₂ : (2 : ℝ) = 1 + 1 := rfl,
+    rw [w₂, sub_eq_add_neg, add_assoc, add_right_neg, add_zero],
+end
+
 lemma orthog_of_orthog_proj_sub (x : α) : (x - orthog_proj S h x) ∈ perp S.carrier:=
 begin
     apply perp_mem_of_orthog_to_units S h,
@@ -526,9 +550,6 @@ begin
         have w₃ := Inf_le {r : ℝ | ∃ (z : α) (H : z ∈ S), r = ∥x - z∥} (dist_bounded_below S h x) w₂,
         exact w₃,
     end,
-    have w₂ : ∥x-(orthog_proj S h x + ⟪y ∥ x - orthog_proj S h x⟫•y)∥^2 = ∥x - orthog_proj S h x∥^2 - ⟪y ∥ x - orthog_proj S h x⟫^2 := begin
-        sorry,
-    end,
     by_contradiction,
     rw [conj_symm, ←ne.def, ←sqr_pos_iff_neq_zero] at a,
     have w₃ : ∥x - orthog_proj S h x∥ ^ 2 - ⟪y ∥ x - orthog_proj S h x⟫ ^ 2 < ∥x-orthog_proj S h x∥^2 := begin
@@ -537,7 +558,7 @@ begin
         apply (real.add_lt_add_iff_left (∥x - orthog_proj S h x∥ ^ 2)).2,
         exact neg_lt_zero.2 a,
     end,
-    rw [←w₂] at w₃,
+    rw [←min_dist_expr S h x y k₂] at w₃,
     rw [←norm_sqr_leq_iff_norm_leq] at w₁,
     rw [lt_iff_not_ge] at w₃,
     exact absurd w₁ w₃,
@@ -842,7 +863,8 @@ begin
 
     rcases h₁ with ⟨M, H, h₁⟩,
     use M*∥y∥,
-    have w₁ : ∥y∥>0 := sorry,
+    rw [←ne.def] at h,
+    have w₁ := (@norm_pos_iff α ip_space_is_normed_group y).2 h,
     use mul_pos H w₁,
     intros x,
     apply le_trans (cauchy_schwarz (f x) y),
@@ -951,7 +973,7 @@ begin
     repeat {exact l},
 end
 
-lemma adjoint_unique (S : α →ₗ[ℝ] α) (k : ∀ (x y : α), ⟪f x ∥ y⟫ = ⟪x ∥ S y⟫) : S = adjoint f h :=
+lemma adjoint_ext (S : α →ₗ[ℝ] α) (k : ∀ (x y : α), ⟪f x ∥ y⟫ = ⟪x ∥ S y⟫) : S = adjoint f h :=
 begin
     ext,
     have k₁ := adjoint_to_fun_unique f h _ k,
@@ -963,7 +985,7 @@ end
 lemma adjoint_is_involution : adjoint (adjoint f h) (adjoint_bounded f h) = f :=
 begin
     apply eq.symm,
-    apply adjoint_unique _ _,
+    apply adjoint_ext _ _,
     intros x y,
     exact adjoint_ip_switch' f h x y,
 end

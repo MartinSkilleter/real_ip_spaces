@@ -24,8 +24,15 @@ class ℝ_parallelopotamus (β : Type*) [normed_space ℝ β] :=
 variables {β : Type*}
 variables [decidable_eq β] [normed_space ℝ β] [ℝ_parallelopotamus β]
 
-@[simp] lemma par_law (x y : β) : ∥x+y∥^2 + ∥x-y∥^2 = 2*∥x∥^2+2*∥y∥^2 :=
+lemma par_law (x y : β) : ∥x+y∥^2 + ∥x-y∥^2 = 2*∥x∥^2+2*∥y∥^2 :=
 by apply ℝ_parallelopotamus.parallelogram_law
+
+lemma par_law' (x y : β) : ∥x+y∥^2 = 2*∥x∥^2 + 2*∥y∥^2 - ∥x-y∥^2 :=
+begin
+    rw [←add_zero (∥x+y∥^2), ←add_right_neg (∥x-y∥^2), ←add_assoc, sub_eq_add_neg _ (∥x-y∥^2)],
+    apply congr_arg (λ r, r + -(∥x-y∥^2)),
+    exact par_law x y,
+end
 
 instance par_has_inner_product : has_ℝ_inner_product β :=
 ⟨λ x y, 1/4*(∥x+y∥^2 - ∥x-y∥^2)⟩
@@ -130,6 +137,12 @@ by {cases n, {rw [int.cast_of_nat], exact par_smul_nat x z n},
     apply congr_arg (λ (r : ℝ), (-1)*r),
     rw [←nat.cast_one, ←nat.cast_add],
     exact par_smul_nat x z (1+n)}}
+
+lemma rat_mul_denom_eq_num (q : ℚ) : q * q.denom = q.num :=
+begin
+    rw [rat.num_denom q],
+    sorry,
+end
 
 lemma par_smul_rat {x z : β} (r : ℚ) : ⟪(r : ℝ) • x ∥ z⟫ = (r : ℝ) * ⟪x ∥ z⟫ :=
 begin
